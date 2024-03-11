@@ -1,0 +1,8 @@
+class Config:
+    connect_args = {}
+    db_url = "mysql+pymysql://user:pwd@db"
+    echo_sql = True
+    jwt_secret = "f3ef77203bdf10139e9979aff7be5ba49868fa477d3329891dc19a10d2429547"  # # openssl rand -hex 32
+    jwt_algorithm = "HS256"
+    jwt_expires_minutes = 60 * 24 * 7
+    host = "https://calendar.kubesrun.top/"
