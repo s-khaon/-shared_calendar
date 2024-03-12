@@ -9,10 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "element-plus": "^2.6.1",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.23.0",
+    "pinia": "^2.1.7",
     "vite-plugin-eslint": "^1.8.1",
-    "vue": "^3.4.21"
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
