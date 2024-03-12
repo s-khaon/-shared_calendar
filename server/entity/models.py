@@ -22,7 +22,7 @@ class User(ModelBase):
     hashed_password = Column(String(200), comment="加密后密码")
     is_active = Column(Boolean, default=True, comment="是否激活")
 
-    groups = relationship("Group", secondary="group_users")
+    groups = relationship("Group", secondary="group_users", back_populates="members")
 
 
 class Group(ModelBase):
@@ -31,8 +31,8 @@ class Group(ModelBase):
     group_name = Column(String(20), index=True, nullable=False, comment="团队名称")
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="团队所有者")
 
-    owner = relationship("User", back_populates="groups")
-    members = relationship("User", secondary="group_users")
+    owner = relationship("User")
+    members = relationship("User", secondary="group_users", back_populates="groups")
 
     todo_items = relationship("TodoList", back_populates="group")
 
@@ -42,8 +42,11 @@ class GroupInvitation(ModelBase):
 
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=False, comment="所属团队")
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="创建人")
-    link = Column(String(200), nullable=False, comment="链接")
+    code = Column(String(36), nullable=False, comment="链接")
     joined_at = Column(DateTime, nullable=True, comment="加入时间")
+
+    group = relationship("Group")
+    creator = relationship("User")
 
 
 group_users = Table(

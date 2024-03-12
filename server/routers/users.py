@@ -17,13 +17,15 @@ router = APIRouter(
 )
 
 
-@router.get("/users/", response_model=list[schemas.UserPublic], dependencies=[Depends(get_token_header)])
+@router.get("/users/", response_model=list[schemas.UserPublic], dependencies=[Depends(get_token_header)],
+            name="获取用户列表")
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     users = user_service.get_users(db, skip=skip, limit=limit)
     return users
 
 
-@router.get("/users/{user_id}", response_model=schemas.UserPublic, dependencies=[Depends(get_token_header)])
+@router.get("/users/{user_id}", response_model=schemas.UserPublic, dependencies=[Depends(get_token_header)],
+            name="获取用户详情")
 def read_user(user_id: int, db: Session = Depends(get_db)):
     db_user = user_service.get_user_by_id(db, user_id=user_id)
     if db_user is None:
@@ -31,7 +33,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@router.post("/login", description="登录", response_model=LoginResponse)
+@router.post("/login", name="登录", response_model=LoginResponse)
 async def login_for_access_token(
         req: Annotated[schemas.UserLogin, Body()], db: Session = Depends(get_db)
 ) -> LoginResponse:
@@ -49,7 +51,7 @@ async def login_for_access_token(
                          info=UserBase(email=user.email, nickname=user.nickname))
 
 
-@router.post("/register/", description="注册", response_model=LoginResponse)
+@router.post("/register/", name="注册", response_model=LoginResponse)
 async def register_user(user: Annotated[schemas.UserCreate, Body()], db: Session = Depends(get_db)):
     db_user = user_service.get_user_by_email(db, email=user.email)
     if db_user:
