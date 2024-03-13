@@ -1,16 +1,17 @@
-import { login, getUserInfoWithToken } from '@/api/user'
+import { login, getUserInfo } from '@/api/user'
 import router from '@/router/index'
-import { ElLoading } from 'element-plus'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { getLoginToken, setUserId, updateLoginToken, updateUserInfo } from '@/utils/user'
+import { getLoginToken, updateLoginToken, updateUserInfo } from '@/utils/user'
+import {emitter} from "@/utils/bus.js";
+import {removeUserInfo} from "@/utils/storage.js";
 
 
 export const useUserStore = defineStore('user', () => {
   const loadingInstance = ref(null)
 
   const userInfo = ref({})
-  const token = ref(getLoginToken() || '')
+  const token = ref(getLoginToken() || {})
   const setUserInfo = (val) => {
     userInfo.value = val
     updateUserInfo(val)
@@ -28,36 +29,30 @@ export const useUserStore = defineStore('user', () => {
   }
   /* 获取用户信息*/
   const GetUserInfo = async() => {
-    const res = await getUserInfoWithToken()
+    const res = await getUserInfo()
     setUserInfo(res.data)
     return res
   }
   /* 登录*/
   const LoginIn = async(loginInfo) => {
-    loadingInstance.value = ElLoading.service({
-      fullscreen: true,
-      text: '登录中，请稍候...',
-    })
+    emitter.emit('showLoading')
     try {
       const res = await login(loginInfo)
-      if (res.code === '000000') {
-        updateLoginToken(res.data.token)
-        setUserInfo(res.data.user)
-        setToken(res.data.token)
-        await setUserId(res.data.user.userId)
-        return true
-      }
+      updateLoginToken(res.data.token)
+      setUserInfo(res.data.user)
+      setToken(res.data.token)
+      return true
     } catch (e) {
-      loadingInstance.value.close()
+      emitter.emit('closeLoading')
+      return false
     }
-    loadingInstance.value.close()
   }
   /* 登出*/
   const LoginOut = async() => {
-    token.value = ''
+    token.value = {}
     sessionStorage.clear()
     removeUserInfo()
-    router.push({ name: 'Login', replace: true })
+    await router.push({name: 'Login', replace: true})
     window.location.reload()
   }
 

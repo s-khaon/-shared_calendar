@@ -2,11 +2,11 @@ const loginTokenKey = 'loginToken'
 const userInfoKey = 'userInfo'
 
 export function getUserToken() {
-  const token = window.localStorage.getItem(loginTokenKey)
-  return token || ''
+  const tokenInfo = JSON.parse(window.localStorage.getItem(loginTokenKey))
+  return tokenInfo || {}
 }
 export function setUserToken(token) {
-  window.localStorage.setItem(loginTokenKey, token)
+  window.localStorage.setItem(loginTokenKey, JSON.stringify(token))
 }
 
 export function removeUserToken() {
