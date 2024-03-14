@@ -67,7 +67,7 @@ const onFulfilled = async response => {
     if (response.headers.msg) {
         response.data.msg = decodeURI(response.headers.msg)
     }
-    return response.data
+    return response
 }
 
 const onRejected = async error => {
@@ -104,6 +104,7 @@ const onRejected = async error => {
                 message: error.response?.data?.msg ? error.response.data.msg : '认证异常',
                 type: 'error'
             })
+            debugger
             console.log("认证错误:", error)
             const userStore = useUserStore()
             await userStore.LoginOut()

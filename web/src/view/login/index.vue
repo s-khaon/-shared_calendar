@@ -4,6 +4,7 @@ import {login} from "@/api/user.js";
 import {setUserInfo, setUserToken} from "@/utils/storage.js";
 import {Message, Lock} from "@element-plus/icons-vue";
 import {useRouter} from "vue-router";
+
 const router = useRouter()
 const checkEmail = (rule, value, cb) => {
   //验证邮箱的正则表达式
@@ -35,12 +36,12 @@ const submitForm = (formRef) => {
   formRef.validate(async valid => {
     if (valid) {
       const res = await login(loginForm)
-      if (res && res.code === 200) {
+      if (res && res.status == 200) {
         //登录成功
         //保存用户信息
-        setUserInfo(res.info)
+        setUserInfo(res.data.info)
         //保存token
-        setUserToken(res.token)
+        setUserToken(res.data.token)
         //跳转到首页
         await router.push({name: 'Home'})
       }

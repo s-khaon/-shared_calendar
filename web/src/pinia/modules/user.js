@@ -53,7 +53,6 @@ export const useUserStore = defineStore('user', () => {
     sessionStorage.clear()
     removeUserInfo()
     await router.push({name: 'Login', replace: true})
-    window.location.reload()
   }
 
 

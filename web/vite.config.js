@@ -10,7 +10,7 @@ export default defineConfig({
     open: true, // vite项目启动时自动打开浏览器
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       }
     },
