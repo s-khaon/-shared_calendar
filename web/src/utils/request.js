@@ -35,7 +35,9 @@ const onFulfilled2 = config => {
     const token = getUserToken()
     config.headers = {
         'Content-Type': 'application/json',
-        'Authorization': token.token_type + ' ' + token.access_token,
+    }
+    if (token && token.access_token) {
+        config.headers['Authorization'] = token.token_type + " " + token
     }
     return config
 };
@@ -56,9 +58,9 @@ service.interceptors.request.use(
 )
 
 const onFulfilled = async response => {
-    const userStore = useUserStore()
     closeLoading()
     if (response.headers['new-token']) {
+        const userStore = useUserStore()
         setUserToken(response.headers['new-token'])
         userStore.setToken(response.headers['new-token'])
     }

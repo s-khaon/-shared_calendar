@@ -9,7 +9,6 @@ router.beforeEach(async (to, from) => {
     const token = userStore.token
     // 在白名单中的判断情况
     if (whiteList.indexOf(to.name) > -1) {
-        debugger
         if (token && token.access_token) {
             return {name: "Home", replace: true}
         } else {

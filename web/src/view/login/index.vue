@@ -35,7 +35,7 @@ const submitForm = (formRef) => {
   formRef.validate(async valid => {
     if (valid) {
       const res = await login(loginForm)
-      if (res) {
+      if (res && res.code === 200) {
         //登录成功
         //保存用户信息
         setUserInfo(res.info)

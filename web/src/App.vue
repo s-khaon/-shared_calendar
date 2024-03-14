@@ -9,7 +9,7 @@
 
 <style scoped>
 #app {
-  background: #eee;
-  height: 100%;
+  background: white;
+  height: 100vh
 }
 </style>
