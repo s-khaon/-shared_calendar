@@ -1,7 +1,17 @@
 <script setup>
-import {computed, onMounted, ref} from "vue";
-import {Aim, ArrowDown, ArrowLeft, ArrowRight, Edit, Minus, Operation, Plus} from "@element-plus/icons-vue";
-import {getGroups} from '@/api/group'
+import {computed, onMounted, reactive, ref} from "vue";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Connection,
+  Delete, DocumentRemove,
+  Edit,
+  Minus,
+  Operation,
+  Plus
+} from "@element-plus/icons-vue";
+import {getGroups, createGroup, updateGroup} from '@/api/group'
 import {getTodoItems} from "@/api/todoList.js";
 import {getMonthFirstAndLastDay} from "@/utils/date.js";
 
@@ -13,11 +23,22 @@ const defaultGroup = {
 }
 const groupOptions = ref([defaultGroup])
 const todItems = ref([])
-
+const groupDialogVisible = ref(false)
+const groupFormRef = ref()
+const groupForm = ref({
+  group_name: "",
+  id: 0
+})
 const currentGroupId = ref(0)
 
 let currentGroup = computed(() => {
   return groupOptions.value.find((item) => item.id === currentGroupId.value)
+})
+
+const groupFormRules = reactive({
+  group_name: [
+    {required: true, message: '请输入团队名称', trigger: 'blur', max: 20, min: 1},
+  ],
 })
 
 const selectDate = (val) => {
@@ -28,16 +49,66 @@ const selectDate = (val) => {
 const addPlan = (date) => {
   console.log(date)
 }
+
+const resetGroupForm = () => {
+  groupFormRef.value.resetFields()
+}
+
+const addGroup = () => {
+  groupDialogVisible.value = true
+}
+
+const removeGroup = () => {
+  console.log(currentGroup.value)
+}
+
+const quitGroup = () => {
+  console.log(currentGroup.value)
+}
+const editGroup = () => {
+  groupForm.value = {
+    group_name: currentGroup.value.group_name,
+    id: currentGroup.value.id
+  }
+  groupDialogVisible.value = true
+}
+
+const submitGroupForm = () => {
+  groupFormRef.value.validate(async (valid) => {
+    if (valid) {
+      if (groupForm.value.id) {
+        const res = await updateGroup(groupForm.value)
+        if (res && res.status === 200) {
+          for (let i = 0; i < groupOptions.value.length; i++) {
+            if (groupOptions.value[i].id === groupForm.value.id) {
+              groupOptions.value[i] = res.data
+              break
+            }
+          }
+          groupDialogVisible.value = false
+        }
+      } else {
+        const res = await createGroup(groupForm.value)
+        if (res && res.status === 200) {
+          groupOptions.value.push(res.data)
+          groupDialogVisible.value = false
+        }
+      }
+    }
+  })
+}
+
+
 onMounted(async () => {
   const res = await getGroups()
   if (res && res.status === 200) {
     if (res.data && res.data.length > 0) {
-      groupOptions.value = res.data
+      groupOptions.value = [defaultGroup, ...res.data]
       // todo check fixed one
       currentGroupId.value = res.data[0].id
     }
   }
-  if (currentGroupId) {
+  if (currentGroupId.value) {
     const [firstDay, lastDay] = getMonthFirstAndLastDay(currentDate.value);
     const params = {
       from_date: firstDay,
@@ -76,14 +147,15 @@ onMounted(async () => {
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
-                <el-popover placement="bottom" trigger="click" width="220px">
+                <el-popover placement="bottom" trigger="click" width="280px">
                   <template #reference>
                     <el-button :icon="Operation" size="small" type="success"/>
                   </template>
-                  <el-button type="success" :icon="Edit" circle/>
-                  <el-button type="primary" :icon="Plus"/>
-                  <el-button type="danger" :icon="Minus"/>
-                  <el-button :icon="Aim" type="info" circle/>
+                  <el-button type="success" :icon="Edit" circle @click="editGroup" :disabled="currentGroupId === 0"/>
+                  <el-button type="primary" :icon="Plus" @click="addGroup"/>
+                  <el-button type="danger" :icon="Delete" @click="removeGroup"  :disabled="currentGroupId === 0"/>
+                  <el-button color="orange" :icon="DocumentRemove" @click="quitGroup"  :disabled="currentGroupId === 0"/>
+                  <el-button :icon="Connection" type="info" circle :disabled="currentGroupId === 0"/>
                 </el-popover>
               </el-col>
               <el-col :span="6">
@@ -152,7 +224,26 @@ onMounted(async () => {
     </el-col>
   </el-row>
   <el-backtop :right="20" :bottom="100"/>
-
+  <el-dialog
+      v-model="groupDialogVisible"
+      title="添加团队"
+      width="300"
+      :before-close="resetGroupForm"
+  >
+    <el-form ref="groupFormRef" :model="groupForm" :rules="groupFormRules" label-width="80px">
+      <el-form-item label="团队名称" prop="group_name">
+        <el-input v-model="groupForm.group_name" maxlength="20"/>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="groupDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitGroupForm">
+          确定
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 
 </template>
 
