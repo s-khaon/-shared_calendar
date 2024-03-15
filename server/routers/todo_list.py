@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Path, Body, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from dependencies import get_token_header, get_page_query
+from dependencies import get_token_header
 from entity import models, schemas
 from service import todo_list as todo_service
 from service.users import get_current_active_user

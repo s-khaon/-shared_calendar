@@ -17,12 +17,13 @@ def create_group(group: schemas.GroupCreate, user: models.User, db: Session) -> 
 
 
 def update_group(group: schemas.GroupUpdate, user: models.User, db: Session) -> models.Group:
-    db_group = get_group_by_id(group.group_id, db)
+    db_group = get_group_by_id(group.id, db)
     if not db_group:
         raise HTTPException(404, "团队不存在")
-    if db_group.owner_id == user.id:
+    if db_group.owner_id != user.id:
         raise HTTPException(403, "您不是团队所有者，无法修改")
     db_group.group_name = group.group_name
+    db.commit()
     return db_group
 
 
@@ -52,6 +53,7 @@ def quit_group(group_id: int, user: models.User, db: Session):
     if db_group.owner_id == user.id:
         raise HTTPException(403, "团队所有者无法退出，如需退出请删除团队")
     db_group.members.remove(user)
+    db.commit()
 
 
 def delete_group(group_id: int, user: models.User, db: Session):

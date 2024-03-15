@@ -15,8 +15,11 @@ def get_todo_list(
         raise HTTPException(403, detail="请先加入此团队")
     next_date_str = (datetime.datetime.strptime(to_date_str, "%Y-%m-%d") + datetime.timedelta(days=1)
                      ).strftime("%Y-%m-%d")
-    db_items = db.query(models.TodoList).filter(models.TodoList.group_id == group_id,
-                                                models.TodoList.start_time.between(from_date_str, next_date_str)).order_by(
+    query = db.query(models.TodoList).filter(models.TodoList.group_id == group_id,
+                                                models.TodoList.start_time.between(from_date_str, next_date_str))
+    if group_id == 0:
+        query = query.filter(models.TodoList.user_id == current_user.id)
+    db_items = query.order_by(
         desc(models.TodoList.id), desc(models.TodoList.id)).all()
     # 按日期分组
     result = list()

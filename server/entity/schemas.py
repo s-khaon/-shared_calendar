@@ -95,7 +95,7 @@ class GroupCreate(SchemasBase):
 
 
 class GroupUpdate(GroupCreate):
-    group_id: int = Field(title="团队id")
+    id: int = Field(title="团队id")
 
 
 class JoinGroup(SchemasBase):
