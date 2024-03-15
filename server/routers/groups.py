@@ -20,7 +20,13 @@ router = APIRouter(
 @router.post("/", name="创建团队", response_model=schemas.GroupInfo)
 async def create_group(group: Annotated[schemas.GroupCreate, Body()], db: Session = Depends(get_db),
                        current_user: models.User = Depends(get_current_active_user)):
-    return group_service.create_group(db, group, current_user)
+    return group_service.create_group(group, current_user, db)
+
+
+@router.put("/", name="更新团队", response_model=schemas.GroupInfo)
+async def create_group(group: Annotated[schemas.GroupUpdate, Body()], db: Session = Depends(get_db),
+                       current_user: models.User = Depends(get_current_active_user)):
+    return group_service.update_group(group, current_user, db)
 
 
 @router.get("/", response_model=list[schemas.GroupInfo], name="团队列表")
@@ -46,8 +52,8 @@ async def delete_group(group_id: Annotated[int, Path(title="团队id")], db: Ses
     group_service.delete_group(group_id, current_user, db)
 
 
-@router.post("/invitation/{group_id}", name="生成邀请链接", response_model=schemas.JoinGroup)
-async def create_group_invitation_link(group_id: Annotated[int, Path(title="团队id")], db: Session = Depends(get_db),
+@router.post("/invitation/{group_id}", name="生成邀请码", response_model=schemas.JoinGroup)
+async def create_group_invitation_code(group_id: Annotated[int, Path(title="团队id")], db: Session = Depends(get_db),
                                        current_user: models.User = Depends(get_current_active_user)):
     return group_service.create_invitation_code(group_id, current_user, db)
 
@@ -62,4 +68,3 @@ async def join_group(code: Annotated[str, Query(title="邀请码")], db: Session
                      current_user: models.User = Depends(get_current_active_user)):
     group_service.join_group(code, current_user, db)
     return schemas.MSGResponse(detail="加入成功")
-

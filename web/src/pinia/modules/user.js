@@ -38,8 +38,11 @@ export const useUserStore = defineStore('user', () => {
     emitter.emit('showLoading')
     try {
       const res = await login(loginInfo)
+      if (res.status !== 200) {
+        return false
+      }
       updateLoginToken(res.data.token)
-      setUserInfo(res.data.user)
+      setUserInfo(res.data.info)
       setToken(res.data.token)
       return true
     } catch (e) {
@@ -50,7 +53,7 @@ export const useUserStore = defineStore('user', () => {
   /* 登出*/
   const LoginOut = async() => {
     token.value = {}
-    sessionStorage.clear()
+    userInfo.value = {}
     removeUserInfo()
     await router.push({name: 'Login', replace: true})
   }

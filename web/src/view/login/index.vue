@@ -1,11 +1,11 @@
 <script setup>
 import {reactive, ref} from "vue";
-import {login} from "@/api/user.js";
-import {setUserInfo, setUserToken} from "@/utils/storage.js";
 import {Message, Lock} from "@element-plus/icons-vue";
 import {useRouter} from "vue-router";
+import {useUserStore} from "@/pinia/modules/user.js";
 
 const router = useRouter()
+const userStore = useUserStore()
 const checkEmail = (rule, value, cb) => {
   //验证邮箱的正则表达式
   const regEmail = /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/;
@@ -35,16 +35,11 @@ const submitForm = (formRef) => {
   if (!formRef) return
   formRef.validate(async valid => {
     if (valid) {
-      const res = await login(loginForm)
-      if (res && res.status == 200) {
-        //登录成功
-        //保存用户信息
-        setUserInfo(res.data.info)
-        //保存token
-        setUserToken(res.data.token)
-        //跳转到首页
+      if (await userStore.LoginIn(loginForm)){
         await router.push({name: 'Home'})
+        return true
       }
+      return false
     } else {
       return false;
     }

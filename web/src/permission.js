@@ -14,23 +14,25 @@ router.beforeEach(async (to, from) => {
         } else {
             return true
         }
+    }
+    // 不在白名单中并且已经登录的时候
+    if (token && token.access_token) {
+        if (to.matched.length) {
+            return true
+        } else {
+            return {name: '404'}
+        }
     } else {
-        // 不在白名单中并且已经登录的时候
-        if (token && token.access_token) {
-            if (to.matched.length) {
-                return true
-            } else {
-                return {name: '404'}
-            }
-        }
         // 不在白名单中并且未登录的时候
-        if (!token && whiteList.indexOf(to.name) < 0) {
-            return {
-                name: 'Login',
-                query: {
-                    redirect: document.location.hash
-                }
+        const temp = {
+            name: 'Login',
+            replace: true,
+        }
+        if (to.path !== from.path) {
+            temp['query'] = {
+                redirect: document.location.hash
             }
         }
+        return temp
     }
 })

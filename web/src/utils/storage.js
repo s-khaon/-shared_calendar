@@ -21,6 +21,5 @@ export function setUserInfo(userInfo) {
   window.localStorage.setItem(userInfoKey, JSON.stringify(userInfo))
 }
 export function removeUserInfo() {
-  // window.localStorage.removeItem(userInfoKey)
   window.localStorage.clear()
 }

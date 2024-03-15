@@ -37,7 +37,7 @@ const onFulfilled2 = config => {
         'Content-Type': 'application/json',
     }
     if (token && token.access_token) {
-        config.headers['Authorization'] = token.token_type + " " + token
+        config.headers['Authorization'] = token.token_type + " " + token.access_token
     }
     return config
 };
@@ -104,7 +104,6 @@ const onRejected = async error => {
                 message: error.response?.data?.msg ? error.response.data.msg : '认证异常',
                 type: 'error'
             })
-            debugger
             console.log("认证错误:", error)
             const userStore = useUserStore()
             await userStore.LoginOut()

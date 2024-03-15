@@ -94,6 +94,10 @@ class GroupCreate(SchemasBase):
     group_name: str = Field(max_length=20, title="团队名称")
 
 
+class GroupUpdate(GroupCreate):
+    group_id: int = Field(title="团队id")
+
+
 class JoinGroup(SchemasBase):
     code: str = Field(title="邀请码")
 
@@ -145,3 +149,8 @@ class TodoList(SchemasBase):
 
     class Config:
         from_attributes = True
+
+
+class TodoItemsGroupByDate(SchemasBase):
+    key: str
+    value: list[TodoList]

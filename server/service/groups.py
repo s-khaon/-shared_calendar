@@ -7,12 +7,22 @@ from sqlalchemy.orm import Session
 from entity import schemas, models
 
 
-def create_group(db: Session, group: schemas.GroupCreate, user: models.User) -> models.Group:
+def create_group(group: schemas.GroupCreate, user: models.User, db: Session) -> models.Group:
     db_group = models.Group(group_name=group.group_name, owner_id=user.id)
     db_group.members.append(user)
     db.add(db_group)
     db.commit()
     db.refresh(db_group)
+    return db_group
+
+
+def update_group(group: schemas.GroupUpdate, user: models.User, db: Session) -> models.Group:
+    db_group = get_group_by_id(group.group_id, db)
+    if not db_group:
+        raise HTTPException(404, "团队不存在")
+    if db_group.owner_id == user.id:
+        raise HTTPException(403, "您不是团队所有者，无法修改")
+    db_group.group_name = group.group_name
     return db_group
 
 
@@ -32,7 +42,7 @@ def get_group_detail(group_id: int, user: models.User, db: Session):
         if member.id == user.id:
             return db_group
     else:
-        raise HTTPException(400, "请先加入团队")
+        raise HTTPException(403, "请先加入团队")
 
 
 def quit_group(group_id: int, user: models.User, db: Session):
@@ -40,7 +50,7 @@ def quit_group(group_id: int, user: models.User, db: Session):
     if not db_group:
         raise HTTPException(404, "团队不存在")
     if db_group.owner_id == user.id:
-        raise HTTPException(400, "团队所有者无法退出，如需退出请删除团队")
+        raise HTTPException(403, "团队所有者无法退出，如需退出请删除团队")
     db_group.members.remove(user)
 
 
@@ -59,7 +69,7 @@ def create_invitation_code(group_id: int, user: models.User, db: Session) -> str
         db.commit()
         return db_code
     else:
-        raise HTTPException(status_code=400, detail="只能团队所有者邀请成员")
+        raise HTTPException(status_code=403, detail="只能团队所有者邀请成员")
 
 
 # 通过邀请码获取邀请详情
