@@ -44,6 +44,7 @@ const planForm = reactive({
   done_time: "",
   done_result: "",
   is_all_day: false,
+  is_done: false,
   start_time: "",
   end_time: "",
   group_id: currentGroupId.value,
@@ -97,6 +98,7 @@ const clickAddPlan = () => {
   planForm.done_time = ''
   planForm.done_result = ''
   planForm.is_all_day = false
+  planForm.is_done = false
   planForm.start_time = formatTime(currentDate.value)
   planForm.end_time = formatTime(endTime)
   planForm.group_id = currentGroupId.value
@@ -111,6 +113,7 @@ const clickEditPlan = (item) => {
   planForm.done_time = item.done_time
   planForm.done_result = item.done_result
   planForm.is_all_day = item.is_all_day
+  planForm.is_done = !!item.done_time
   planForm.start_time = item.start_time
   planForm.end_time = item.end_time
   planForm.group_id = item.group_id
@@ -229,6 +232,13 @@ const getTodoItemsData = async (groupId) => {
   }
 }
 
+const changePlanIsDone = (val) => {
+  if (!val) {
+    planForm.done_time = ""
+    planForm.done_result = ""
+  }
+}
+
 onMounted(async () => {
   const res = await getGroups()
   if (res && res.status === 200) {
@@ -329,6 +339,17 @@ onMounted(async () => {
           <el-card @click="clickEditPlan(item)">
             <h4>{{ item.name }}</h4>
             <p>{{ item.description }}</p>
+            <el-descriptions
+                title="完成情况"
+                :column="2"
+                v-show="item.done_time"
+            >
+              <el-descriptions-item label="完成时间">{{item.done_time}}</el-descriptions-item>
+              <el-descriptions-item label="完成人">{{item.done_user?.nickname || "-"}}</el-descriptions-item>
+              <el-descriptions-item label="完成说明" v-show="item.done_result">
+                {{item.done_result}}
+              </el-descriptions-item>
+            </el-descriptions>
           </el-card>
         </el-timeline-item>
       </el-timeline>
@@ -410,6 +431,26 @@ onMounted(async () => {
             value-format="YYYY-MM-DD HH:mm:ss"
         />
       </el-form-item>
+<!--      <el-form-item label="是否完成" prop="is_done">-->
+<!--        <el-switch-->
+<!--            v-model="planForm.is_done"-->
+<!--            class="mt-2"-->
+<!--            style="margin-left: 24px"-->
+<!--            inline-prompt-->
+<!--            :active-icon="Check"-->
+<!--            :inactive-icon="Close"-->
+<!--            @change="changePlanIsDone"-->
+<!--        />-->
+<!--      </el-form-item>-->
+<!--      <el-form-item label="完成时间" prop="group_id" v-show="planForm.is_done">-->
+<!--        <el-date-picker-->
+<!--            v-model="planForm.done_time"-->
+<!--            type="datetime"-->
+<!--            placeholder="选择日期"-->
+<!--            format="YYYY-MM-DD HH:mm:ss"-->
+<!--            value-format="YYYY-MM-DD HH:mm:ss"-->
+<!--        />-->
+<!--      </el-form-item>-->
       <el-form-item label="备注" prop="description">
         <el-input v-model="planForm.description" maxlength="500" type="textarea" autosize/>
       </el-form-item>

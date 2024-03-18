@@ -2,7 +2,7 @@ import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import desc
-from sqlalchemy.orm import session
+from sqlalchemy.orm import session, joinedload
 
 from entity import models, schemas
 from service import groups as group_service
@@ -19,7 +19,7 @@ def get_todo_list(
                                                 models.TodoList.start_time.between(from_date_str, next_date_str))
     if group_id == 0:
         query = query.filter(models.TodoList.user_id == current_user.id)
-    db_items = query.order_by(
+    db_items = query.options(joinedload(models.TodoList.done_user), joinedload(models.TodoList.creator)).order_by(
         desc(models.TodoList.id), desc(models.TodoList.id)).all()
     # 按日期分组
     result = list()

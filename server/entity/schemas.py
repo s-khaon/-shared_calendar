@@ -147,6 +147,9 @@ class TodoList(SchemasBase):
     created_at: datetime = Field(title="创建时间")
     updated_at: datetime = Field(title="修改时间")
 
+    done_user: UserPublic = Field(title="完成者")
+    creator: UserPublic = Field(title="创建者")
+
     class Config:
         from_attributes = True
 

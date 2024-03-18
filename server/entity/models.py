@@ -73,3 +73,5 @@ class TodoList(ModelBase):
     end_time = Column(DateTime, nullable=True, comment="计划结束时间")
 
     group = relationship("Group", back_populates="todo_items")
+    done_user = relationship("User", foreign_keys=[done_by])
+    creator = relationship("User", foreign_keys=[user_id])
