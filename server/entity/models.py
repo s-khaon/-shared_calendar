@@ -68,7 +68,7 @@ class TodoList(ModelBase):
     done_time = Column(DateTime, nullable=True, comment="完成时间")
     done_by = Column(Integer, ForeignKey("users.id"), nullable=True, comment="完成人")
     done_result = Column(String(50), nullable=True, default="", comment="完成结果")
-    is_all_day = Column(Boolean, default=False, comment="全天事件")
+    is_all_day = Column(Boolean, default=False, comment="全天事件", nullable=False)
     start_time = Column(DateTime, nullable=False, comment="计划开始时间")
     end_time = Column(DateTime, nullable=True, comment="计划结束时间")
 

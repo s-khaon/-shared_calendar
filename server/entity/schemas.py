@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TypeVar
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import Generic
 
 T = TypeVar("T")
@@ -37,7 +37,7 @@ class UserCreate(UserBase):
 
 
 class UserLogin(SchemasBase):
-    email: str = Field(max_length=100, title="邮箱")
+    email: EmailStr = Field(max_length=100, title="邮箱")
     password: str = Field(max_length=20, title="密码")
 
 

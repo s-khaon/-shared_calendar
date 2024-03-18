@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Body, Query
@@ -20,8 +19,8 @@ router = APIRouter(
 
 @router.get("/{group_id}", response_model=list[schemas.TodoItemsGroupByDate], name="代办列表")
 async def get_items(group_id: Annotated[int, Path(title="团队id")],
-                    from_date: Annotated[str, Query(title="起始日期")],
-                    to_date: Annotated[str, Query(title="截止日期")],
+                    from_date: Annotated[str, Query(title="起始日期", regex=r"^\d{4}-\d{2}-\d{2}$")],
+                    to_date: Annotated[str, Query(title="截止日期", regex=r"^\d{4}-\d{2}-\d{2}$")],
                     current_user: models.User = Depends(get_current_active_user),
                     db: Session = Depends(get_db)):
     return todo_service.get_todo_list(group_id, current_user, db, from_date, to_date)

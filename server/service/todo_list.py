@@ -37,6 +37,9 @@ def get_todo_list(
 def create_todo_item(item: schemas.TodoItemCreate, current_user: models.User, db: session) -> models.TodoList:
     if not group_service.is_user_in_group(current_user.id, item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
+    if item.is_all_day:
+        item.start_time = item.start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        item.end_time = item.end_time.replace(hour=0, minute=0, second=0, microsecond=0)
     db_item = models.TodoList(**item.dict(), user_id=current_user.id)
     db.add(db_item)
     db.commit()
@@ -50,6 +53,10 @@ def update_todo_item(item: schemas.TodoItemUpdate, current_user: models.User, db
         raise HTTPException(403, detail="请先加入此团队")
     if not db_item:
         raise HTTPException(404, "记录不存在")
+    if item.is_all_day:
+        item.start_time = item.start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        item.end_time = item.end_time.replace(hour=0, minute=0, second=0, microsecond=0)
+
     for key, value in item.dict().items():
         setattr(db_item, key, value)
     db.commit()
