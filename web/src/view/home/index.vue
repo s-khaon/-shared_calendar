@@ -11,9 +11,10 @@ import {
   Plus
 } from "@element-plus/icons-vue";
 import {getGroups, createGroup, updateGroup} from '@/api/group'
-import {createTodoItem, getTodoItems, updateTodoItem} from "@/api/todoList.js";
+import {cancelDoneTodoItem, createTodoItem, doneTodoItem, getTodoItems, updateTodoItem} from "@/api/todoList.js";
 import {formatDate, formatTime, getMonthFirstAndLastDay} from "@/utils/date.js";
 import {emitter} from "@/utils/bus.js";
+import {ElMessage, ElMessageBox} from "element-plus";
 
 const calendar = ref()
 const currentDate = ref(new Date())
@@ -35,6 +36,7 @@ const currentGroupId = ref(0)
 let currentGroup = computed(() => {
   return groupOptions.value.find((item) => item.id === currentGroupId.value)
 })
+const loading = ref(false)
 const planDialogVisible = ref(false)
 const planFormRef = ref()
 const selectedDatePlans = ref([])
@@ -151,8 +153,12 @@ const editGroup = () => {
 }
 
 const submitGroupForm = () => {
+  loading.value = true
   groupFormRef.value.validate(async (valid) => {
-    if (!valid) return false
+    if (!valid) {
+      loading.value = false
+      return false
+    }
     emitter.emit('showLoading')
     if (groupForm.id) {
       const res = await updateGroup(groupForm)
@@ -173,13 +179,18 @@ const submitGroupForm = () => {
       }
     }
     emitter.emit('closeLoading')
+    loading.value = false
     return true
   })
 }
 
 const submitPlanForm = () => {
+  loading.value = true
   planFormRef.value.validate(async (valid) => {
-    if (!valid) return false
+    if (!valid) {
+      loading.value = false
+      return false
+    }
     emitter.emit('showLoading')
     if (planForm.id) {
       const res = await updateTodoItem(planForm)
@@ -195,6 +206,7 @@ const submitPlanForm = () => {
     await getTodoItemsData(currentGroupId.value)
     flushPlanData(selectedDateStr.value)
     emitter.emit('closeLoading')
+    loading.value = false
     return true
   })
 }
@@ -232,10 +244,55 @@ const getTodoItemsData = async (groupId) => {
   }
 }
 
-const changePlanIsDone = (val) => {
+const inputDoneResult = (plan) => {
+  ElMessageBox.prompt('请输入完成结果', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputErrorMessage: '最大长度为50个字符',
+  })
+      .then(({ value }) => {
+        if(value.length > 50) {
+          ElMessage({
+            type: 'error',
+            message: '最大长度为50个字符',
+          })
+          return
+        }
+        doneTodoItem({done_result: value, id: plan.id}).then(res => {
+          if (res && res.status === 200) {
+            plan.done_time = formatTime(new Date())
+            plan.is_done = true
+            plan.done_result = value
+            ElMessage({
+              type: 'success',
+              message: `完成成功`,
+            })
+          }
+        })
+      })
+      .catch(() => {
+        ElMessage({
+          type: 'info',
+          message: '取消',
+        })
+      })
+}
+
+const changePlanIsDone = (val, plan) => {
   if (!val) {
-    planForm.done_time = ""
-    planForm.done_result = ""
+    cancelDoneTodoItem(plan.id).then(res => {
+      if (res && res.status === 200) {
+        plan.done_time = ""
+        plan.done_result = ""
+        plan.is_done = false
+        ElMessage({
+          type: 'success',
+          message: `取消完成成功`,
+        })
+      }
+      })
+  } else {
+    inputDoneResult(plan)
   }
 }
 
@@ -337,7 +394,9 @@ onMounted(async () => {
         <el-timeline-item :timestamp="formatTimelineTime(item)" placement="top" v-for="item in selectedDatePlans"
                           :key="item.id">
           <el-card @click="clickEditPlan(item)">
-            <h4>{{ item.name }}</h4>
+            <div style="float: left;margin-right: 10px;margin-top:8px" @click.stop="">
+              <el-checkbox v-model="item.is_done" size="large"  @change="changePlanIsDone($event, item)"/>
+            </div> <h4>{{ item.name }}</h4>
             <p>{{ item.description }}</p>
             <el-descriptions
                 title="完成情况"
@@ -369,7 +428,7 @@ onMounted(async () => {
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="groupDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitGroupForm">
+        <el-button type="primary" @click="submitGroupForm" :loading="loading">
           确定
         </el-button>
       </div>
@@ -458,7 +517,7 @@ onMounted(async () => {
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="planDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitPlanForm">
+        <el-button type="primary" @click="submitPlanForm" :loading="loading">
           确定
         </el-button>
       </div>

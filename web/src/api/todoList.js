@@ -1,4 +1,4 @@
-import { service } from '@/utils/request'
+import {service} from '@/utils/request'
 
 export const getTodoItems = (groupId, params) => {
     return service({
@@ -27,6 +27,21 @@ export const updateTodoItem = (data) => {
 export const deleteTodoItem = (todoId) => {
     return service({
         url: '/todo/item/' + todoId,
+        method: 'delete',
+    })
+}
+
+export const doneTodoItem = (data) => {
+    return service({
+        url: '/todo/item/done/',
+        method: 'put',
+        data: data
+    })
+}
+
+export const cancelDoneTodoItem = (id) => {
+    return service({
+        url: '/todo/item/done/' + id + '/',
         method: 'delete',
     })
 }
