@@ -16,7 +16,7 @@ def get_todo_list(
     next_date_str = (datetime.datetime.strptime(to_date_str, "%Y-%m-%d") + datetime.timedelta(days=1)
                      ).strftime("%Y-%m-%d")
     query = db.query(models.TodoList).filter(models.TodoList.group_id == group_id,
-                                                models.TodoList.start_time.between(from_date_str, next_date_str))
+                                             models.TodoList.start_time.between(from_date_str, next_date_str))
     if group_id == 0:
         query = query.filter(models.TodoList.user_id == current_user.id)
     db_items = query.options(joinedload(models.TodoList.done_user), joinedload(models.TodoList.creator)).order_by(
@@ -69,3 +69,27 @@ def delete_todo_item(item_id: int, current_user: models.User, db: session):
         raise HTTPException(403, detail="请先加入此团队")
     db.delete(db_item)
     db.commit()
+
+
+def done_todo_item(req: schemas.DoneTodoItem, current_user: models.User, db: session):
+    db_item: models.TodoList = db.query(models.TodoList).get(req.id)
+    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
+        raise HTTPException(403, detail="请先加入此团队")
+    if not db_item:
+        raise HTTPException(404, "事项不存在")
+    db_item.is_done = True
+    db_item.done_result = req.done_result
+    db_item.done_by = current_user.id
+    db.commit()
+
+
+def cancel_todo_item(item_id: int, current_user: models, db: session):
+    db_item: models.TodoList = db.query(models.TodoList).get(item_id)
+    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
+        raise HTTPException(403, detail="请先加入此团队")
+    if not db_item:
+        raise HTTPException(404, "事项不存在")
+    db_item.is_done = False
+    db_item.done_by = None
+    db.commit()
+

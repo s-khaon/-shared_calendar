@@ -43,3 +43,19 @@ async def update_todo_item(item_id: Annotated[int, Path(title="待办事项id")]
                            current_user: models.User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     todo_service.delete_todo_item(item_id, current_user, db)
     return schemas.MSGResponse(detail="删除成功")
+
+
+@router.put("/item/done/", response_model=schemas.MSGResponse, name="完成代办事项")
+async def update_todo_item_done(req: Annotated[schemas.DoneTodoItem, Body(title="完成情况")],
+                                current_user: models.User = Depends(get_current_active_user),
+                                db: Session = Depends(get_db)):
+    todo_service.done_todo_item(req, current_user, db)
+    return schemas.MSGResponse()
+
+
+@router.delete("/item/done/{item_id}/", response_model=schemas.MSGResponse, name="取消完成代办事项")
+async def cancel_update_todo_item_done(item_id: Annotated[int, Path(title="待办事项id")],
+                                       current_user: models.User = Depends(get_current_active_user),
+                                       db: Session = Depends(get_db)):
+    todo_service.cancel_todo_item(item_id, current_user, db)
+    return schemas.MSGResponse()

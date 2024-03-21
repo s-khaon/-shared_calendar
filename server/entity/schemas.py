@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TypeVar
 
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, computed_field
 from typing import Generic
 
 T = TypeVar("T")
@@ -147,11 +147,23 @@ class TodoList(SchemasBase):
     created_at: datetime = Field(title="创建时间")
     updated_at: datetime = Field(title="修改时间")
 
-    done_user: UserPublic = Field(title="完成者")
+    done_user: UserPublic | None = Field(title="完成者")
     creator: UserPublic = Field(title="创建者")
 
     class Config:
         from_attributes = True
+
+    @computed_field
+    @property
+    def is_done(self) -> bool:
+        return True if self.done_time else False
+
+    @is_done.setter
+    def is_done(self, value: bool) -> None:
+        if value:
+            self.done_time = datetime.now()
+        else:
+            self.done_time = None
 
 
 class TodoItemsGroupByDate(SchemasBase):

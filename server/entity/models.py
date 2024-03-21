@@ -75,3 +75,14 @@ class TodoList(ModelBase):
     group = relationship("Group", back_populates="todo_items")
     done_user = relationship("User", foreign_keys=[done_by])
     creator = relationship("User", foreign_keys=[user_id])
+
+    @property
+    def is_done(self) -> bool:
+        return True if self.done_time else False
+
+    @is_done.setter
+    def is_done(self, value: bool) -> None:
+        if value:
+            self.done_time = datetime.now()
+        else:
+            self.done_time = None
