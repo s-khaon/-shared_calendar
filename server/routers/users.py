@@ -48,7 +48,7 @@ async def login_for_access_token(
         data={"sub": user.email}
     )
     return LoginResponse(token=Token(access_token=access_token, token_type="bearer"),
-                         info=UserBase(email=user.email, nickname=user.nickname))
+                         info=UserBase(email=user.email, nickname=user.nickname, id=user.id))
 
 
 @router.post("/register/", name="注册", response_model=LoginResponse)
@@ -61,4 +61,4 @@ async def register_user(user: Annotated[schemas.UserCreate, Body()], db: Session
         data={"sub": new_one.email}
     )
     return LoginResponse(token=Token(access_token=access_token, token_type="bearer"),
-                         info=UserBase(email=new_one.email, nickname=new_one.nickname))
+                         info=UserBase(email=new_one.email, nickname=new_one.nickname, id=user.id))

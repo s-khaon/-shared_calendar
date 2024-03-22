@@ -17,7 +17,7 @@ router = APIRouter(
 )
 
 
-@router.get("/{group_id}", response_model=list[schemas.TodoItemsGroupByDate], name="代办列表")
+@router.get("/{group_id}/", response_model=list[schemas.TodoItemsGroupByDate], name="代办列表")
 async def get_items(group_id: Annotated[int, Path(title="团队id")],
                     from_date: Annotated[str, Query(title="起始日期", regex=r"^\d{4}-\d{2}-\d{2}$")],
                     to_date: Annotated[str, Query(title="截止日期", regex=r"^\d{4}-\d{2}-\d{2}$")],

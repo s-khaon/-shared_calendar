@@ -49,10 +49,10 @@ def create_todo_item(item: schemas.TodoItemCreate, current_user: models.User, db
 
 def update_todo_item(item: schemas.TodoItemUpdate, current_user: models.User, db: session):
     db_item = db.query(models.TodoList).get(item.id)
+    if not db_item:
+        raise HTTPException(404, "事项不存在")
     if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
-    if not db_item:
-        raise HTTPException(404, "记录不存在")
     if item.is_all_day:
         item.start_time = item.start_time.replace(hour=0, minute=0, second=0, microsecond=0)
         item.end_time = item.end_time.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -65,6 +65,8 @@ def update_todo_item(item: schemas.TodoItemUpdate, current_user: models.User, db
 
 def delete_todo_item(item_id: int, current_user: models.User, db: session):
     db_item = db.query(models.TodoList).get(item_id)
+    if not db_item:
+        raise HTTPException(404, "事项不存在")
     if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
     db.delete(db_item)
@@ -73,10 +75,10 @@ def delete_todo_item(item_id: int, current_user: models.User, db: session):
 
 def done_todo_item(req: schemas.DoneTodoItem, current_user: models.User, db: session):
     db_item: models.TodoList = db.query(models.TodoList).get(req.id)
-    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
-        raise HTTPException(403, detail="请先加入此团队")
     if not db_item:
         raise HTTPException(404, "事项不存在")
+    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
+        raise HTTPException(403, detail="请先加入此团队")
     db_item.is_done = True
     db_item.done_result = req.done_result
     db_item.done_by = current_user.id
