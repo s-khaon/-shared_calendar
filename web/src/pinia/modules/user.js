@@ -1,16 +1,16 @@
-import { login, getUserInfo } from '@/api/user'
 import router from '@/router/index'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { getLoginToken, updateLoginToken, updateUserInfo } from '@/utils/user'
+import { getLoginToken, updateLoginToken, updateUserInfo, getUserInfo } from '@/utils/user'
 import {emitter} from "@/utils/bus.js";
 import {removeUserInfo} from "@/utils/storage.js";
+import {login} from "@/api/user.js";
 
 
 export const useUserStore = defineStore('user', () => {
   const loadingInstance = ref(null)
 
-  const userInfo = ref({})
+  const userInfo = ref(getUserInfo() || {})
   const token = ref(getLoginToken() || {})
   const setUserInfo = (val) => {
     userInfo.value = val
@@ -29,9 +29,7 @@ export const useUserStore = defineStore('user', () => {
   }
   /* 获取用户信息*/
   const GetUserInfo = async() => {
-    const res = await getUserInfo()
-    setUserInfo(res.data)
-    return res
+    return userInfo.value
   }
   /* 登录*/
   const LoginIn = async(loginInfo) => {
@@ -63,6 +61,9 @@ export const useUserStore = defineStore('user', () => {
     updateLoginToken(token.value)
   })
 
+  watch(userInfo, () => {
+    updateUserInfo(userInfo.value)
+  })
   return {
     userInfo,
     token,

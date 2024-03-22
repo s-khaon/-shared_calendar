@@ -8,7 +8,7 @@ export const login = (data) => {
     })
 }
 
-export const getUserInfo = (userId) => {
+export const getRemoteUserInfo = (userId) => {
     return service({
         url: '/users/' + userId,
         method: 'get',

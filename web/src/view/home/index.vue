@@ -3,19 +3,28 @@ import {computed, onMounted, reactive, ref} from "vue";
 import {
   ArrowDown,
   ArrowLeft,
-  ArrowRight, Check, Close,
+  ArrowRight, Avatar, ChatLineSquare, Check, Close, CloseBold,
   Connection,
-  Delete, DocumentRemove,
-  Edit,
+  Delete,
+  Edit, Finished,
   Operation,
-  Plus
+  Plus, Remove, UserFilled
 } from "@element-plus/icons-vue";
-import {getGroups, createGroup, updateGroup} from '@/api/group'
-import {cancelDoneTodoItem, createTodoItem, doneTodoItem, getTodoItems, updateTodoItem} from "@/api/todoList.js";
+import {getGroups, createGroup, updateGroup, deleteGroup, quitGroup} from '@/api/group'
+import {
+  cancelDoneTodoItem,
+  createTodoItem,
+  doneTodoItem,
+  getTodoItems,
+  updateTodoItem,
+  deleteTodoItem
+} from "@/api/todoList.js";
 import {formatDate, formatTime, getMonthFirstAndLastDay} from "@/utils/date.js";
+import {useUserStore} from '@/pinia/modules/user'
 import {emitter} from "@/utils/bus.js";
 import {ElMessage, ElMessageBox} from "element-plus";
 
+const userStore = useUserStore()
 const calendar = ref()
 const currentDate = ref(new Date())
 const selectedDateStr = ref(formatDate(new Date()))
@@ -32,10 +41,10 @@ const groupForm = reactive({
   id: 0
 })
 const currentGroupId = ref(0)
+const isOwner = ref(true)
 
-let currentGroup = computed(() => {
-  return groupOptions.value.find((item) => item.id === currentGroupId.value)
-})
+const currentGroup = ref(groupOptions.value[0])
+
 const loading = ref(false)
 const planDialogVisible = ref(false)
 const planFormRef = ref()
@@ -139,17 +148,52 @@ const addGroup = () => {
   groupDialogVisible.value = true
 }
 
-const removeGroup = () => {
-  console.log(currentGroup.value)
+const removeGroup = async() => {
+  const res = await ElMessageBox.confirm('确定要删除' + currentGroup.value.group_name + '吗？数据将会全部清理，请谨慎操作！', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+    center: true,
+  })
+  if (res === 'confirm') {
+    const res = await deleteGroup(currentGroupId.value)
+    if (res && res.status === 200) {
+      await getData()
+    }
+  }
 }
 
-const quitGroup = () => {
+const handleQuitGroup = async() => {
+  const res = await ElMessageBox.confirm('确定要退出' + currentGroup.value.group_name + '吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+    center: true,
+  })
+  if (res === 'confirm') {
+    const res = await quitGroup(currentGroupId.value)
+    if (res && res.status === 200) {
+      await getData()
+    }
+  }
+}
+
+const inviteToJoin = () => {
   console.log(currentGroup.value)
 }
 const editGroup = () => {
   groupForm.group_name = currentGroup.value.group_name
   groupForm.id = currentGroup.value.id
   groupDialogVisible.value = true
+}
+
+const changeGroup = (item) => {
+  currentGroupId.value = item.id
+  currentGroup.value = item
+  userStore.GetUserInfo().then(userInfo => {
+    isOwner.value = item.owner_id === userInfo.id
+  })
+
 }
 
 const submitGroupForm = () => {
@@ -232,6 +276,14 @@ const formatTimelineTime = (item) => {
   }
 }
 
+const formatTimeAndAuthor = (item) => {
+  const timeFormat = formatTimelineTime(item)
+  if (item.creator) {
+    return timeFormat + " —— " + item.creator.nickname
+  }
+  return timeFormat
+}
+
 const getTodoItemsData = async (groupId) => {
   const [firstDay, lastDay] = getMonthFirstAndLastDay(currentDate.value);
   const params = {
@@ -249,20 +301,26 @@ const inputDoneResult = (plan) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     inputErrorMessage: '最大长度为50个字符',
+    center: true
   })
-      .then(({ value }) => {
-        if(value.length > 50) {
+      .then(({value}) => {
+        if (value && value.length > 50) {
           ElMessage({
             type: 'error',
             message: '最大长度为50个字符',
           })
+          plan.is_done = false
           return
+        }
+        if (!value) {
+          value = ''
         }
         doneTodoItem({done_result: value, id: plan.id}).then(res => {
           if (res && res.status === 200) {
             plan.done_time = formatTime(new Date())
             plan.is_done = true
             plan.done_result = value
+            plan.done_user = userStore.userInfo
             ElMessage({
               type: 'success',
               message: `完成成功`,
@@ -270,11 +328,12 @@ const inputDoneResult = (plan) => {
           }
         })
       })
-      .catch(() => {
+      .catch((err) => {
         ElMessage({
           type: 'info',
           message: '取消',
         })
+        plan.is_done = false
       })
 }
 
@@ -290,24 +349,44 @@ const changePlanIsDone = (val, plan) => {
           message: `取消完成成功`,
         })
       }
-      })
+    })
   } else {
     inputDoneResult(plan)
   }
 }
 
-onMounted(async () => {
+const removePlan = async(plan) => {
+  const res = await ElMessageBox.confirm('确定要删除该计划吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+    center: true,
+  })
+  if (res === 'confirm') {
+    const res = await deleteTodoItem(plan.id)
+    if (res && res.status === 200) {
+      await getTodoItemsData(currentGroupId.value)
+      flushPlanData(selectedDateStr.value)
+    }
+  }
+}
+
+const getData = async() => {
   const res = await getGroups()
   if (res && res.status === 200) {
     if (res.data && res.data.length > 0) {
       groupOptions.value = [defaultGroup, ...res.data]
       // todo check fixed one
-      currentGroupId.value = res.data[0].id
+      changeGroup(res.data[0])
     }
   }
   if (currentGroupId.value) {
     await getTodoItemsData(currentGroupId.value)
   }
+}
+
+onMounted(async () => {
+  await getData()
 })
 
 
@@ -331,20 +410,20 @@ onMounted(async () => {
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item v-for="item in groupOptions" :key="item.id" :value="item.id"
-                                        @click="currentGroupId = item.id">{{ item.group_name }}
+                                        @click="changeGroup(item)">{{ item.group_name }}
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
-                <el-popover placement="bottom" trigger="click" width="280px">
+                <el-popover placement="bottom" trigger="click" :width="230">
                   <template #reference>
                     <el-button :icon="Operation" size="small" type="success"/>
                   </template>
                   <el-button type="success" :icon="Edit" circle @click="editGroup" :disabled="currentGroupId === 0"/>
                   <el-button type="primary" :icon="Plus" @click="addGroup"/>
-                  <el-button type="danger" :icon="Delete" @click="removeGroup" :disabled="currentGroupId === 0"/>
-                  <el-button color="orange" :icon="DocumentRemove" @click="quitGroup" :disabled="currentGroupId === 0"/>
-                  <el-button :icon="Connection" type="info" circle :disabled="currentGroupId === 0"/>
+                  <el-button type="danger" :icon="Delete" @click="removeGroup" :disabled="currentGroupId === 0" v-show="isOwner"/>
+                  <el-button type="danger" :icon="Remove" @click="handleQuitGroup" :disabled="currentGroupId === 0" v-show="!isOwner"/>
+                  <el-button  color="#80d5ff" :icon="Connection" circle :disabled="currentGroupId === 0" @click="inviteToJoin"/>
                 </el-popover>
               </el-col>
               <el-col :span="6">
@@ -391,24 +470,28 @@ onMounted(async () => {
     </el-col>
     <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
       <el-timeline class="timeline">
-        <el-timeline-item :timestamp="formatTimelineTime(item)" placement="top" v-for="item in selectedDatePlans"
+        <el-timeline-item :timestamp="formatTimeAndAuthor(item)" placement="top" v-for="item in selectedDatePlans"
                           :key="item.id">
-          <el-card @click="clickEditPlan(item)">
+          <el-card @click="clickEditPlan(item)" :class="{ 'is-done': item.is_done }" class="todo-item">
             <div style="float: left;margin-right: 10px;margin-top:8px" @click.stop="">
-              <el-checkbox v-model="item.is_done" size="large"  @change="changePlanIsDone($event, item)"/>
-            </div> <h4>{{ item.name }}</h4>
+              <el-checkbox v-model="item.is_done" size="large" @change="changePlanIsDone($event, item)"/>
+            </div>
+            <h4>
+              <el-text :tag="item.is_done ? 'del' :'p'">{{ item.name }}</el-text>
+            </h4>
             <p>{{ item.description }}</p>
-            <el-descriptions
-                title="完成情况"
-                :column="2"
-                v-show="item.done_time"
-            >
-              <el-descriptions-item label="完成时间">{{item.done_time}}</el-descriptions-item>
-              <el-descriptions-item label="完成人">{{item.done_user?.nickname || "-"}}</el-descriptions-item>
-              <el-descriptions-item label="完成说明" v-show="item.done_result">
-                {{item.done_result}}
-              </el-descriptions-item>
-            </el-descriptions>
+            <el-icon :size="30" class="delete-button" color="#f56c6c" @click.stop="removePlan(item)">
+              <CloseBold/>
+            </el-icon>
+            <div v-show="item.is_done" class="done-icon">
+              <p v-show="item.done_result">
+                <el-icon style="margin-top:1px;margin-right: 2px;"><ChatLineSquare /></el-icon> {{item.done_result}}
+              </p>
+              <div>
+                <el-icon style="margin-top:1px;margin-right: 2px;color: #007bff;"><Avatar /></el-icon>{{item.done_user.nickname || "-"}}
+                <el-icon style="margin-left:10px;margin-top:1px;margin-right: 2px;color: green;"><Finished /></el-icon> {{item.done_time}}
+              </div>
+            </div>
           </el-card>
         </el-timeline-item>
       </el-timeline>
@@ -490,26 +573,6 @@ onMounted(async () => {
             value-format="YYYY-MM-DD HH:mm:ss"
         />
       </el-form-item>
-<!--      <el-form-item label="是否完成" prop="is_done">-->
-<!--        <el-switch-->
-<!--            v-model="planForm.is_done"-->
-<!--            class="mt-2"-->
-<!--            style="margin-left: 24px"-->
-<!--            inline-prompt-->
-<!--            :active-icon="Check"-->
-<!--            :inactive-icon="Close"-->
-<!--            @change="changePlanIsDone"-->
-<!--        />-->
-<!--      </el-form-item>-->
-<!--      <el-form-item label="完成时间" prop="group_id" v-show="planForm.is_done">-->
-<!--        <el-date-picker-->
-<!--            v-model="planForm.done_time"-->
-<!--            type="datetime"-->
-<!--            placeholder="选择日期"-->
-<!--            format="YYYY-MM-DD HH:mm:ss"-->
-<!--            value-format="YYYY-MM-DD HH:mm:ss"-->
-<!--        />-->
-<!--      </el-form-item>-->
       <el-form-item label="备注" prop="description">
         <el-input v-model="planForm.description" maxlength="500" type="textarea" autosize/>
       </el-form-item>
@@ -523,8 +586,9 @@ onMounted(async () => {
       </div>
     </template>
   </el-dialog>
+  <el-icon class="fixed-user"><UserFilled /></el-icon>
   <el-button class="fixed-button" circle @click="clickAddPlan" :icon="Plus" type="primary"/>
-  <el-backtop :right="20" :bottom="100" :visibility-height="0"/>
+  <el-backtop :right="20" :bottom="150"/>
 </template>
 
 <style lang='css' scoped>
@@ -563,13 +627,43 @@ onMounted(async () => {
 
 .fixed-button {
   position: fixed;
-  bottom: 50px; /* 距离底部的距离 */
+  bottom: 100px; /* 距离底部的距离 */
   right: 20px; /* 距离右侧的距离 */
-  background-color: #007bff; /* 按钮背景颜色 */
+  background-color: #80d5ff; /* 按钮背景颜色 */
   color: #fff; /* 文字颜色 */
   padding: 10px 20px; /* 内边距 */
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
+}
+
+.fixed-user {
+  position: fixed;
+  bottom: 40px; /* 距离底部的距离 */
+  right: 20px; /* 距离右侧的距离 */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* 使边框成圆形 */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* 添加阴影效果 */
+  cursor: pointer;
+}
+
+.is-done {
+  background-color: #e6ffe6;
+}
+
+.is-done :deep(.el-descriptions__cell) {
+  background-color: #e6ffe6;
+}
+
+.todo-item {
+  position: relative; /* 父元素相对定位 */
+}
+
+.delete-button {
+  position: absolute; /* 删除按钮绝对定位 */
+  top: 15px; /* 距离顶部20像素 */
+  right: 10px; /* 距离右边20像素 */
 }
 </style>

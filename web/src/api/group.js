@@ -25,28 +25,28 @@ export const updateGroup = (data) => {
 
 export const deleteGroup = (groupId) => {
     return service({
-        url: '/groups/' + groupId,
+        url: '/groups/' + groupId + '/',
         method: 'delete',
     })
 }
 
 export const getGroup = (groupId) => {
     return service({
-        url: '/groups/' + groupId,
+        url: '/groups/' + groupId + '/',
         method: 'get',
     })
 }
 
 export const quitGroup = (groupId) => {
     return service({
-        url: '/groups/' + groupId + '/member/quit',
+        url: '/groups/' + groupId + '/member/quit/',
         method: 'delete',
     })
 }
 
 export const joinGroup = (params) => {
     return service({
-        url: '/groups/member/join',
+        url: '/groups/member/join/',
         method: 'post',
         params: params
     })
@@ -54,14 +54,14 @@ export const joinGroup = (params) => {
 
 export const getInvitationCode = (groupId) => {
     return service({
-        url: '/groups/invitation/' + groupId,
+        url: '/groups/invitation/' + groupId + '/',
         method: 'get',
     })
 }
 
 export const getInvitationDetail = (code) => {
     return service({
-        url: '/groups/invitation/' + code,
+        url: '/groups/invitation/' + code + '/',
         method: 'get',
     })
 }

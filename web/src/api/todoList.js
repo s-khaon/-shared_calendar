@@ -2,7 +2,7 @@ import {service} from '@/utils/request'
 
 export const getTodoItems = (groupId, params) => {
     return service({
-        url: '/todo/' + groupId,
+        url: '/todo/' + groupId + '/',
         method: 'get',
         params: params
     })
@@ -26,7 +26,7 @@ export const updateTodoItem = (data) => {
 
 export const deleteTodoItem = (todoId) => {
     return service({
-        url: '/todo/item/' + todoId,
+        url: '/todo/item/' + todoId + '/',
         method: 'delete',
     })
 }

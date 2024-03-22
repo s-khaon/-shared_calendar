@@ -1,16 +1,17 @@
 import {getStorageUserInfo, getUserToken, removeUserToken, setUserInfo, setUserToken,} from '@/utils/storage'
 import router from '@/router'
+import {getRemoteUserInfo} from "@/api/user.js";
 
 // 获取用户信息
 export const getUserInfo = async() => {
   let userInfo = getStorageUserInfo()
   if (!userInfo) {
-    const res = await getUserInfo()
-    if (res.code === '000000') {
+    const res = await getRemoteUserInfo()
+    if (res && res.status === 200) {
       userInfo = res.data
       setUserInfo(res.data)
     } else {
-      await router.push({path: '/login'})
+      await router.push({name: 'Login', replace: true})
       return
     }
   }
