@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_token_header
 from entity import schemas
-from entity.schemas import Token, LoginResponse, UserBase
+from entity.schemas import Token, LoginResponse, UserDetail
 from service import users as user_service
 from service.users import authenticate_user, create_access_token
 
@@ -48,7 +48,7 @@ async def login_for_access_token(
         data={"sub": user.email}
     )
     return LoginResponse(token=Token(access_token=access_token, token_type="bearer"),
-                         info=UserBase(email=user.email, nickname=user.nickname, id=user.id))
+                         info=UserDetail(email=user.email, nickname=user.nickname, id=user.id, is_active=user.is_active))
 
 
 @router.post("/register/", name="注册", response_model=LoginResponse)
@@ -61,4 +61,4 @@ async def register_user(user: Annotated[schemas.UserCreate, Body()], db: Session
         data={"sub": new_one.email}
     )
     return LoginResponse(token=Token(access_token=access_token, token_type="bearer"),
-                         info=UserBase(email=new_one.email, nickname=new_one.nickname, id=user.id))
+                         info=UserDetail(email=new_one.email, nickname=new_one.nickname, id=new_one.id, is_active=new_one.is_active))

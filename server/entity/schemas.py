@@ -28,9 +28,13 @@ class PageQuery(SchemasBase):
 
 
 class UserBase(SchemasBase):
-    id: int
     email: str = Field(max_length=100, title="邮箱")
     nickname: str = Field(max_length=20, title="昵称")
+
+
+class UserDetail(UserBase):
+    id: int
+    is_active: bool
 
 
 class UserCreate(UserBase):
@@ -63,7 +67,7 @@ class TokenData(SchemasBase):
 
 class LoginResponse(SchemasBase):
     token: Token
-    info: UserBase
+    info: UserDetail
 
 
 class GroupInfo(SchemasBase):
