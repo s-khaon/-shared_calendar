@@ -26,7 +26,6 @@ router.beforeEach(async (to, from) => {
         // 不在白名单中并且未登录的时候
         const temp = {
             name: 'Login',
-            replace: true,
         }
         if (to.path !== from.path) {
             temp['query'] = {

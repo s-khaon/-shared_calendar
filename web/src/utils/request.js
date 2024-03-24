@@ -64,8 +64,8 @@ const onFulfilled = async response => {
         setUserToken(response.headers['new-token'])
         userStore.setToken(response.headers['new-token'])
     }
-    if (response.headers.msg) {
-        response.data.msg = decodeURI(response.headers.msg)
+    if (response.headers.detail) {
+        response.data.detail = decodeURI(response.headers.detail)
     }
     return response
 }
@@ -85,7 +85,7 @@ const onRejected = async error => {
         case 500:
             ElMessage({
                 showClose: true,
-                message: error.response?.data?.msg ? error.response.data.msg : '服务端错误，请稍后重试',
+                message: error.response?.data?.detail ? error.response.data.detail : '服务端错误，请稍后重试',
                 type: 'error'
             })
             console.log("服务端错误:", error)
@@ -93,7 +93,7 @@ const onRejected = async error => {
         case 404:
             ElMessage({
                 showClose: true,
-                message: error.response?.data?.msg ? error.response.data.msg : '资源不存在，请确认',
+                message: error.response?.data?.detail ? error.response.data.detail : '资源不存在，请确认',
                 type: 'error'
             })
             console.log("资源不存在:", error)
@@ -101,7 +101,7 @@ const onRejected = async error => {
         case 401:
             ElMessage({
                 showClose: true,
-                message: error.response?.data?.msg ? error.response.data.msg : '认证异常',
+                message: error.response?.data?.detail ? error.response.data.detail : '认证异常',
                 type: 'error'
             })
             console.log("认证错误:", error)
@@ -111,7 +111,7 @@ const onRejected = async error => {
         case 403:
             ElMessage({
                 showClose: true,
-                message: error.response?.data?.msg ? error.response.data.msg : '权限异常',
+                message: error.response?.data?.detail ? error.response.data.detail : '权限异常',
                 type: 'error'
             })
             console.log("权限异常:", error)
@@ -119,14 +119,14 @@ const onRejected = async error => {
         case 400:
             ElMessage({
                 showClose: true,
-                message: error.response?.data?.msg ? error.response.data.msg : "请求参数异常",
+                message: error.response?.data?.detail ? error.response.data.detail : "请求参数异常",
                 type: 'error'
             })
             break
         default:
             ElMessage({
                 showClose: true,
-                message: error.response?.data?.msg ? error.response.data.msg : '接口报错',
+                message: error.response?.data?.detail ? error.response.data.detail : '接口报错',
                 type: 'error'
             })
             break

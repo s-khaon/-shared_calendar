@@ -52,10 +52,10 @@ export const joinGroup = (params) => {
     })
 }
 
-export const getInvitationCode = (groupId) => {
+export const createInvitationCode = (groupId) => {
     return service({
         url: '/groups/invitation/' + groupId + '/',
-        method: 'get',
+        method: 'post',
     })
 }
 

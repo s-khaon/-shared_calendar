@@ -46,7 +46,7 @@ class Group(ModelBase):
     group_name = Column(String(20), index=True, nullable=False, comment="团队名称")
     owner_id = Column(Integer, nullable=False, comment="团队所有者")
 
-    todo_items = relationship("TodoList", back_populates="group", primaryjoin="foreign(TodoList.group_id) == Group.id")
+    todo_items = relationship("TodoList", back_populates="group", primaryjoin="foreign(TodoList.group_id) == Group.id", cascade="all, delete")
 
     owner = relationship("User", primaryjoin="foreign(Group.owner_id) == User.id")
     members = relationship(

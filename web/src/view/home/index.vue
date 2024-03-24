@@ -1,5 +1,5 @@
 <script setup>
-import {computed, onMounted, reactive, ref} from "vue";
+import {onMounted, reactive, ref} from "vue";
 import {
   ArrowDown,
   ArrowLeft,
@@ -10,7 +10,14 @@ import {
   Operation,
   Plus, Remove, UserFilled
 } from "@element-plus/icons-vue";
-import {getGroups, createGroup, updateGroup, deleteGroup, quitGroup} from '@/api/group'
+import {
+  getGroups,
+  createGroup,
+  updateGroup,
+  deleteGroup,
+  quitGroup,
+  createInvitationCode
+} from '@/api/group'
 import {
   cancelDoneTodoItem,
   createTodoItem,
@@ -80,6 +87,11 @@ const planFormRules = reactive({
   ],
 })
 
+const invitationDialogVisible = ref(false)
+
+const invitationLink = ref('')
+
+const currentUser = ref({})
 
 const selectDate = (val) => {
   if (!calendar.value) return
@@ -148,7 +160,7 @@ const addGroup = () => {
   groupDialogVisible.value = true
 }
 
-const removeGroup = async() => {
+const removeGroup = async () => {
   const res = await ElMessageBox.confirm('确定要删除' + currentGroup.value.group_name + '吗？数据将会全部清理，请谨慎操作！', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -163,7 +175,7 @@ const removeGroup = async() => {
   }
 }
 
-const handleQuitGroup = async() => {
+const handleQuitGroup = async () => {
   const res = await ElMessageBox.confirm('确定要退出' + currentGroup.value.group_name + '吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -178,8 +190,49 @@ const handleQuitGroup = async() => {
   }
 }
 
-const inviteToJoin = () => {
-  console.log(currentGroup.value)
+const copyToClipboard = (text) => {
+// 创建一个新的textarea元素
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = 0 // 设置透明度为0，使其不可见但可以选中
+  document.body.appendChild(textarea)
+  textarea.focus() // 让textarea获得焦点
+  textarea.select() // 选择textarea中的所有内容
+
+  // 使用新的Clipboard API将内容复制到剪贴板
+  navigator.clipboard.writeText(text).then(() => {
+    // 复制成功后的操作
+    ElMessage({
+      message: '复制成功',
+      type: 'success',
+      duration: 1000,
+    })
+    invitationDialogVisible.value = false
+  }).catch(err => {
+    // 复制失败后的操作
+    ElMessage({
+      message: '复制失败，请自行复制',
+      type: 'error',
+      duration: 1000,
+    })
+  }).finally(() => {
+    // 移除临时textarea元素
+    document.body.removeChild(textarea)
+  })
+}
+
+const copyInvitationLink = () => {
+  copyToClipboard(invitationLink.value)
+}
+
+const inviteToJoin = async () => {
+  const res = await createInvitationCode(currentGroupId.value)
+  if (res && res.status === 200) {
+    const code = res.data.code
+    invitationLink.value = window.location.origin + '/#/invitation/?code=' + code
+    invitationDialogVisible.value = true
+  }
 }
 const editGroup = () => {
   groupForm.group_name = currentGroup.value.group_name
@@ -193,6 +246,11 @@ const changeGroup = (item) => {
   userStore.GetUserInfo().then(userInfo => {
     isOwner.value = item.owner_id === userInfo.id
   })
+  if (currentGroupId.value) {
+    getTodoItemsData(currentGroupId.value)
+  } else {
+    getTodoItemsData(0)
+  }
 
 }
 
@@ -248,7 +306,6 @@ const submitPlanForm = () => {
       }
     }
     await getTodoItemsData(currentGroupId.value)
-    flushPlanData(selectedDateStr.value)
     emitter.emit('closeLoading')
     loading.value = false
     return true
@@ -293,6 +350,7 @@ const getTodoItemsData = async (groupId) => {
   const res = await getTodoItems(groupId, params)
   if (res && res.status === 200) {
     todItems.value = res.data
+    flushPlanData(selectedDateStr.value)
   }
 }
 
@@ -320,7 +378,9 @@ const inputDoneResult = (plan) => {
             plan.done_time = formatTime(new Date())
             plan.is_done = true
             plan.done_result = value
-            plan.done_user = userStore.userInfo
+            userStore.GetUserInfo().then(userInfo => {
+              plan.done_user = userInfo
+            })
             ElMessage({
               type: 'success',
               message: `完成成功`,
@@ -355,7 +415,7 @@ const changePlanIsDone = (val, plan) => {
   }
 }
 
-const removePlan = async(plan) => {
+const removePlan = async (plan) => {
   const res = await ElMessageBox.confirm('确定要删除该计划吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -366,26 +426,28 @@ const removePlan = async(plan) => {
     const res = await deleteTodoItem(plan.id)
     if (res && res.status === 200) {
       await getTodoItemsData(currentGroupId.value)
-      flushPlanData(selectedDateStr.value)
     }
   }
 }
 
-const getData = async() => {
+const getData = async () => {
   const res = await getGroups()
   if (res && res.status === 200) {
     if (res.data && res.data.length > 0) {
       groupOptions.value = [defaultGroup, ...res.data]
       // todo check fixed one
-      changeGroup(res.data[0])
+      changeGroup(res.data[res.data.length - 1])
     }
-  }
-  if (currentGroupId.value) {
-    await getTodoItemsData(currentGroupId.value)
   }
 }
 
+const userDialogVisible = ref(false)
+const handleLoginOut = async() => {
+  await userStore.LoginOut()
+}
+
 onMounted(async () => {
+  currentUser.value = await userStore.GetUserInfo()
   await getData()
 })
 
@@ -421,9 +483,12 @@ onMounted(async () => {
                   </template>
                   <el-button type="success" :icon="Edit" circle @click="editGroup" :disabled="currentGroupId === 0"/>
                   <el-button type="primary" :icon="Plus" @click="addGroup"/>
-                  <el-button type="danger" :icon="Delete" @click="removeGroup" :disabled="currentGroupId === 0" v-show="isOwner"/>
-                  <el-button type="danger" :icon="Remove" @click="handleQuitGroup" :disabled="currentGroupId === 0" v-show="!isOwner"/>
-                  <el-button  color="#80d5ff" :icon="Connection" circle :disabled="currentGroupId === 0" @click="inviteToJoin"/>
+                  <el-button type="danger" :icon="Delete" @click="removeGroup" :disabled="currentGroupId === 0"
+                             v-show="isOwner"/>
+                  <el-button type="danger" :icon="Remove" @click="handleQuitGroup" :disabled="currentGroupId === 0"
+                             v-show="!isOwner"/>
+                  <el-button color="#80d5ff" :icon="Connection" circle :disabled="currentGroupId === 0"
+                             @click="inviteToJoin"/>
                 </el-popover>
               </el-col>
               <el-col :span="6">
@@ -485,11 +550,20 @@ onMounted(async () => {
             </el-icon>
             <div v-show="item.is_done" class="done-icon">
               <p v-show="item.done_result">
-                <el-icon style="margin-top:1px;margin-right: 2px;"><ChatLineSquare /></el-icon> {{item.done_result}}
+                <el-icon style="margin-top:1px;margin-right: 2px;">
+                  <ChatLineSquare/>
+                </el-icon>
+                {{ item.done_result }}
               </p>
               <div>
-                <el-icon style="margin-top:1px;margin-right: 2px;color: #007bff;"><Avatar /></el-icon>{{item.done_user.nickname || "-"}}
-                <el-icon style="margin-left:10px;margin-top:1px;margin-right: 2px;color: green;"><Finished /></el-icon> {{item.done_time}}
+                <el-icon style="margin-top:1px;margin-right: 2px;color: #007bff;">
+                  <Avatar/>
+                </el-icon>
+                {{ item.done_user?.nickname || "-" }}
+                <el-icon style="margin-left:10px;margin-top:1px;margin-right: 2px;color: green;">
+                  <Finished/>
+                </el-icon>
+                {{ item.done_time }}
               </div>
             </div>
           </el-card>
@@ -586,7 +660,41 @@ onMounted(async () => {
       </div>
     </template>
   </el-dialog>
-  <el-icon class="fixed-user"><UserFilled /></el-icon>
+  <el-dialog
+      v-model="invitationDialogVisible"
+      title="邀请成员"
+      width="300"
+  >
+    <div>{{invitationLink}}</div>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button type="primary" @click="copyInvitationLink" :loading="loading">
+          复制链接
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+  <el-dialog
+      v-model="userDialogVisible"
+      title="用户详情"
+      width="300"
+  >
+    <el-descriptions direction="horizontal">
+      <el-descriptions-item label="邮箱">{{currentUser.email}}</el-descriptions-item>
+      <el-descriptions-item label="昵称">{{currentUser.nickname}}</el-descriptions-item>
+    </el-descriptions>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button type="primary" @click="handleLoginOut" :loading="loading">
+          退出登录
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+  <el-icon class="fixed-user" @click="userDialogVisible=true">
+    <UserFilled/>
+  </el-icon>
   <el-button class="fixed-button" circle @click="clickAddPlan" :icon="Plus" type="primary"/>
   <el-backtop :right="20" :bottom="150"/>
 </template>
@@ -665,5 +773,10 @@ onMounted(async () => {
   position: absolute; /* 删除按钮绝对定位 */
   top: 15px; /* 距离顶部20像素 */
   right: 10px; /* 距离右边20像素 */
+}
+
+.dialog-footer {
+  text-align: center; /* 文字水平居中 */
+  margin-top: 5px; /* 设置顶部间距 */
 }
 </style>

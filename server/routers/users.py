@@ -51,7 +51,7 @@ async def login_for_access_token(
                          info=UserDetail(email=user.email, nickname=user.nickname, id=user.id, is_active=user.is_active))
 
 
-@router.post("/register/", name="注册", response_model=LoginResponse)
+@router.post("/register", name="注册", response_model=LoginResponse)
 async def register_user(user: Annotated[schemas.UserCreate, Body()], db: Session = Depends(get_db)):
     db_user = user_service.get_user_by_email(db, email=user.email)
     if db_user:

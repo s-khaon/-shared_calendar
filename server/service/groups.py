@@ -76,8 +76,8 @@ def create_invitation_code(group_id: int, user: models.User, db: Session) -> str
 
 # 通过邀请码获取邀请详情
 def get_invitation_info(code: str, db: Session):
-    db_code = db.query(models.GroupInvitation).filter(models.GroupInvitation.code == code).first()
-    if db_code:
+    db_code = db.query(models.GroupInvitation).filter_by(code=code).first()
+    if not db_code:
         raise HTTPException(status_code=404, detail="邀请链接不存在")
     return db_code
 

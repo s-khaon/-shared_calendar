@@ -28,7 +28,7 @@ def get_password_hash(password):
 def authenticate_user(db: Session, email: str, password: str):
     user = get_user_by_email(db, email)
     if not user:
-        return False
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在")
     if not verify_password(password, user.hashed_password):
         return False
     return user

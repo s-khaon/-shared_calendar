@@ -14,3 +14,19 @@ export const getRemoteUserInfo = (userId) => {
         method: 'get',
     })
 }
+
+export const register = (data) => {
+    return service({
+        url: '/register',
+        method: 'post',
+        data: data
+    })
+}
+
+export const updateUserInfo = (data) => {
+    return service({
+        url: '/users/',
+        method: 'put',
+        data: data
+    })
+}

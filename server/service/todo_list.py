@@ -11,7 +11,7 @@ from service import groups as group_service
 def get_todo_list(
         group_id: int, current_user: models.User, db: session, from_date_str: str, to_date_str: str
 ) -> list[schemas.TodoItemsGroupByDate]:
-    if not group_service.is_user_in_group(current_user.id, group_id, db):
+    if group_id != 0 and not group_service.is_user_in_group(current_user.id, group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
     next_date_str = (datetime.datetime.strptime(to_date_str, "%Y-%m-%d") + datetime.timedelta(days=1)
                      ).strftime("%Y-%m-%d")
@@ -35,7 +35,7 @@ def get_todo_list(
 
 
 def create_todo_item(item: schemas.TodoItemCreate, current_user: models.User, db: session) -> models.TodoList:
-    if not group_service.is_user_in_group(current_user.id, item.group_id, db):
+    if item.group_id != 0 and not group_service.is_user_in_group(current_user.id, item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
     if item.is_all_day:
         item.start_time = item.start_time.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -51,8 +51,10 @@ def update_todo_item(item: schemas.TodoItemUpdate, current_user: models.User, db
     db_item = db.query(models.TodoList).get(item.id)
     if not db_item:
         raise HTTPException(404, "事项不存在")
-    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
+    if db_item.group_id != 0 and not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
+    if db_item.group_id == 0 and db_item.user_id != current_user.id:
+        raise HTTPException(403, detail="无权限修改他人事项")
     if item.is_all_day:
         item.start_time = item.start_time.replace(hour=0, minute=0, second=0, microsecond=0)
         item.end_time = item.end_time.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -67,8 +69,10 @@ def delete_todo_item(item_id: int, current_user: models.User, db: session):
     db_item = db.query(models.TodoList).get(item_id)
     if not db_item:
         raise HTTPException(404, "事项不存在")
-    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
+    if db_item.group_id != 0 and not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
+    if db_item.group_id == 0 and db_item.user_id != current_user.id:
+        raise HTTPException(403, detail="无权限删除他人事项")
     db.delete(db_item)
     db.commit()
 
@@ -77,8 +81,10 @@ def done_todo_item(req: schemas.DoneTodoItem, current_user: models.User, db: ses
     db_item: models.TodoList = db.query(models.TodoList).get(req.id)
     if not db_item:
         raise HTTPException(404, "事项不存在")
-    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
+    if db_item.group_id != 0 and not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
+    if db_item.group_id == 0 and db_item.user_id != current_user.id:
+        raise HTTPException(403, detail="无权限完成他人事项")
     db_item.is_done = True
     db_item.done_result = req.done_result
     db_item.done_by = current_user.id
@@ -87,11 +93,12 @@ def done_todo_item(req: schemas.DoneTodoItem, current_user: models.User, db: ses
 
 def cancel_todo_item(item_id: int, current_user: models, db: session):
     db_item: models.TodoList = db.query(models.TodoList).get(item_id)
-    if not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
+    if db_item.group_id != 0 and not group_service.is_user_in_group(current_user.id, db_item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
     if not db_item:
         raise HTTPException(404, "事项不存在")
+    if db_item.group_id == 0 and db_item.user_id != current_user.id:
+        raise HTTPException(403, detail="无权限取消他人事项")
     db_item.is_done = False
     db_item.done_by = None
     db.commit()
-

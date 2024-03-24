@@ -87,7 +87,7 @@ class InvitationInfo(SchemasBase):
     creator_id: int = Field(title="邀请人id")
     group_id: int = Field(title="团队id")
 
-    owner: UserPublic = Field(title="所有者")
+    creator: UserPublic = Field(title="创建者")
     group: GroupInfo = Field(title="团队信息")
 
     class Config:
@@ -138,7 +138,7 @@ class DoneTodoItem(SchemasBase):
 
 class TodoList(SchemasBase):
     id: int = Field(title="记录id")
-    group_id: int = Field(gt=0, title="所属团队")
+    group_id: int = Field(title="所属团队")
     user_id: int = Field(gt=0, title="创建人")
     name: str = Field(max_length=20, title="代办事项名称")
     description: str = Field(max_length=500, default="", title="事件介绍")

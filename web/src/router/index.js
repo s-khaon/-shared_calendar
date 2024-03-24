@@ -15,6 +15,11 @@ const routes = [{
         component: () => import('@/view/home/index.vue'),
     },
     {
+        path: '/invitation',
+        name: 'Invitation',
+        component: () => import('@/view/invitation/index.vue'),
+    },
+    {
         path: '/404',
         name: '404',
         hidden: true,
