@@ -6,9 +6,9 @@ import {
   ArrowRight, Avatar, ChatLineSquare, Check, Close, CloseBold,
   Connection,
   Delete,
-  Edit, Finished,
+  Edit, EditPen, Finished, FirstAidKit, List,
   Operation,
-  Plus, Remove, UserFilled
+  Plus, Remove, Service, UserFilled
 } from "@element-plus/icons-vue";
 import {
   getGroups,
@@ -24,7 +24,7 @@ import {
   doneTodoItem,
   getTodoItems,
   updateTodoItem,
-  deleteTodoItem
+  deleteTodoItem, getUndeterminedTodoItems
 } from "@/api/todoList.js";
 import {formatDate, formatTime, getMonthFirstAndLastDay} from "@/utils/date.js";
 import {useUserStore} from '@/pinia/modules/user'
@@ -40,7 +40,8 @@ const defaultGroup = {
   id: 0
 }
 const groupOptions = ref([defaultGroup])
-const todItems = ref([])
+const todoItems = ref([])
+const undeterminedTodoItems = ref([])
 const groupDialogVisible = ref(false)
 const groupFormRef = ref()
 const groupForm = reactive({
@@ -63,6 +64,7 @@ const planForm = reactive({
   done_result: "",
   is_all_day: false,
   is_done: false,
+  is_undetermined: false,
   start_time: "",
   end_time: "",
   group_id: currentGroupId.value,
@@ -100,7 +102,7 @@ const selectDate = (val) => {
 
 const flushPlanData = (dateStr) => {
   selectedDatePlans.value = []
-  for (const item of todItems.value) {
+  for (const item of todoItems.value) {
     if (item.key === dateStr) {
       selectedDatePlans.value = item.value
     }
@@ -110,6 +112,9 @@ const flushPlanData = (dateStr) => {
 const clickDate = (data) => {
   selectedDateStr.value = data.day
   flushPlanData(data.day)
+  if (data.isSelected) {
+    planDialogVisible.value = true
+  }
 }
 
 const clickAddPlan = () => {
@@ -120,6 +125,7 @@ const clickAddPlan = () => {
   planForm.description = ''
   planForm.done_time = ''
   planForm.done_result = ''
+  planForm.is_undetermined = false
   planForm.is_all_day = false
   planForm.is_done = false
   planForm.start_time = formatTime(currentDate.value)
@@ -141,6 +147,7 @@ const clickEditPlan = (item) => {
   planForm.end_time = item.end_time
   planForm.group_id = item.group_id
   planForm.id = item.id
+  planForm.is_undetermined = item.is_undetermined
   planDialogVisible.value = true
 }
 
@@ -334,6 +341,9 @@ const formatTimelineTime = (item) => {
 }
 
 const formatTimeAndAuthor = (item) => {
+  if (item.is_undetermined) {
+    return item.creator.nickname + " 创建于 " + item.created_at
+  }
   const timeFormat = formatTimelineTime(item)
   if (item.creator) {
     return timeFormat + " —— " + item.creator.nickname
@@ -349,8 +359,18 @@ const getTodoItemsData = async (groupId) => {
   }
   const res = await getTodoItems(groupId, params)
   if (res && res.status === 200) {
-    todItems.value = res.data
+    todoItems.value = res.data
     flushPlanData(selectedDateStr.value)
+    await getUndeterminedData()
+  }
+}
+
+const getUndeterminedData = async () => {
+  const res = await getUndeterminedTodoItems(currentGroupId.value)
+  if (res && res.status === 200) {
+    if (res.data && res.data.length > 0) {
+      undeterminedTodoItems.value = res.data
+    }
   }
 }
 
@@ -429,6 +449,7 @@ const removePlan = async (plan) => {
     }
   }
 }
+const undeterminedDrawerVisible = ref(false)
 
 const getData = async () => {
   const res = await getGroups()
@@ -442,9 +463,11 @@ const getData = async () => {
 }
 
 const userDialogVisible = ref(false)
-const handleLoginOut = async() => {
+const handleLoginOut = async () => {
   await userStore.LoginOut()
 }
+
+const toolsDialogVisible = ref(false)
 
 onMounted(async () => {
   currentUser.value = await userStore.GetUserInfo()
@@ -521,10 +544,10 @@ onMounted(async () => {
               <div>
                 {{ data.day.split("-").slice(2).join("-").replace("0", "") }}
               </div>
-              <template v-for="item in todItems" :key="item.id">
+              <template v-for="item in todoItems" :key="item.id">
                 <div class="text-area" v-if="item.key === data.day">
                   <div v-for="i in item.value" :key="i.id">
-                    {{ i.name }}
+                    <el-text :tag="i.is_done ? 'del' :'p'" size="small">{{ i.name }}</el-text>
                   </div>
                 </div>
               </template>
@@ -576,6 +599,7 @@ onMounted(async () => {
       :title="groupForm.id === 0 ? '添加团队' : '编辑团队'"
       width="300"
       :before-close="resetGroupForm"
+      align-center
   >
     <el-form ref="groupFormRef" :model="groupForm" :rules="groupFormRules" label-width="80px">
       <el-form-item label="团队名称" prop="group_name">
@@ -596,12 +620,23 @@ onMounted(async () => {
       :title="planForm.id === 0 ? '添加计划' : '编辑计划'"
       width="300"
       :before-close="resetPlanForm"
+      align-center
   >
     <el-form ref="planFormRef" :model="planForm" :rules="planFormRules" label-width="80px">
       <el-form-item label="计划标题" prop="name">
         <el-input v-model="planForm.name" maxlength="20"/>
       </el-form-item>
-      <el-form-item label="全天计划" prop="is_all_day">
+      <el-form-item label="时间待定" prop="is_undetermined">
+        <el-switch
+            v-model="planForm.is_undetermined"
+            class="mt-2"
+            style="margin-left: 24px"
+            inline-prompt
+            :active-icon="Check"
+            :inactive-icon="Close"
+        />
+      </el-form-item>
+      <el-form-item label="全天计划" prop="is_all_day" v-show="!planForm.is_undetermined">
         <el-switch
             v-model="planForm.is_all_day"
             class="mt-2"
@@ -611,7 +646,7 @@ onMounted(async () => {
             :inactive-icon="Close"
         />
       </el-form-item>
-      <el-form-item label="开始时间" prop="start_time">
+      <el-form-item label="开始时间" prop="start_time" v-if="!planForm.is_undetermined">
         <el-date-picker
             v-if="planForm.is_all_day"
             v-model="planForm.start_time"
@@ -629,7 +664,7 @@ onMounted(async () => {
             value-format="YYYY-MM-DD HH:mm:ss"
         />
       </el-form-item>
-      <el-form-item label="结束时间" prop="end_time">
+      <el-form-item label="结束时间" prop="end_time" v-if="!planForm.is_undetermined">
         <el-date-picker
             v-if="planForm.is_all_day"
             v-model="planForm.end_time"
@@ -664,8 +699,9 @@ onMounted(async () => {
       v-model="invitationDialogVisible"
       title="邀请成员"
       width="300"
+      align-center
   >
-    <div>{{invitationLink}}</div>
+    <div>{{ invitationLink }}</div>
     <template #footer>
       <div class="dialog-footer">
         <el-button type="primary" @click="copyInvitationLink" :loading="loading">
@@ -678,10 +714,11 @@ onMounted(async () => {
       v-model="userDialogVisible"
       title="用户详情"
       width="300"
+      align-center
   >
-    <el-descriptions direction="horizontal">
-      <el-descriptions-item label="邮箱">{{currentUser.email}}</el-descriptions-item>
-      <el-descriptions-item label="昵称">{{currentUser.nickname}}</el-descriptions-item>
+    <el-descriptions direction="horizontal" column="1">
+      <el-descriptions-item label="邮箱">{{ currentUser.email }}</el-descriptions-item>
+      <el-descriptions-item label="昵称">{{ currentUser.nickname }}</el-descriptions-item>
     </el-descriptions>
 
     <template #footer>
@@ -692,11 +729,79 @@ onMounted(async () => {
       </div>
     </template>
   </el-dialog>
-  <el-icon class="fixed-user" @click="userDialogVisible=true">
-    <UserFilled/>
-  </el-icon>
-  <el-button class="fixed-button" circle @click="clickAddPlan" :icon="Plus" type="primary"/>
-  <el-backtop :right="20" :bottom="150"/>
+  <el-dialog
+      v-model="toolsDialogVisible"
+      title="工具箱"
+      width="300"
+      align-center
+  >
+    <div class="toolbox-items">
+      <el-button circle @click="clickAddPlan" :icon="Plus" type="primary" size="large"></el-button>
+      <el-badge :value="undeterminedTodoItems.length" type="warning">
+        <el-button circle @click="undeterminedDrawerVisible=true" :icon="List" type="success" size="large"/>
+      </el-badge>
+      <el-button circle @click="userDialogVisible=true" color="#99bbff" :icon="UserFilled" size="large"></el-button>
+      <el-popover
+          placement="top-start"
+          title="Title"
+          :width="200"
+          trigger="hover"
+          content="this is content, this is content, this is content"
+      >
+        <template #reference>
+          <el-button circle color="#ffccff" :icon="Service" size="large"></el-button>
+        </template>
+      </el-popover>
+    </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button type="primary" @click="toolsDialogVisible=false">
+          关闭
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+  <el-drawer
+      v-model="undeterminedDrawerVisible"
+      title="待定事项"
+      direction="ltr"
+      size="80%"
+  >
+    <div v-for="item in undeterminedTodoItems" :key="item.id" class="undetermined-item">
+      <div>{{ formatTimeAndAuthor(item) }}</div>
+      <el-card @click="clickEditPlan(item)" :class="{ 'is-done': item.is_done }" class="todo-item">
+        <div style="float: left;margin-right: 10px;margin-top:8px" @click.stop="">
+          <el-checkbox v-model="item.is_done" size="large" @change="changePlanIsDone($event, item)"/>
+        </div>
+        <h4>
+          <el-text :tag="item.is_done ? 'del' :'p'">{{ item.name }}</el-text>
+        </h4>
+        <p>{{ item.description }}</p>
+        <el-icon :size="30" class="delete-button" color="#f56c6c" @click.stop="removePlan(item)">
+          <CloseBold/>
+        </el-icon>
+        <div v-show="item.is_done" class="done-icon">
+          <p v-show="item.done_result">
+            <el-icon style="margin-top:1px;margin-right: 2px;">
+              <ChatLineSquare/>
+            </el-icon>
+            {{ item.done_result }}
+          </p>
+          <div>
+            <el-icon style="margin-top:1px;margin-right: 2px;color: #007bff;">
+              <Avatar/>
+            </el-icon>
+            {{ item.done_user?.nickname || "-" }}
+            <el-icon style="margin-left:10px;margin-top:1px;margin-right: 2px;color: green;">
+              <Finished/>
+            </el-icon>
+            {{ item.done_time }}
+          </div>
+        </div>
+      </el-card>
+    </div>
+  </el-drawer>
+  <el-button :icon="FirstAidKit" class="fixed-toolbox" circle @click="toolsDialogVisible=true"/>
 </template>
 
 <style lang='css' scoped>
@@ -733,7 +838,7 @@ onMounted(async () => {
   font-size: 8px;
 }
 
-.fixed-button {
+.fixed-toolbox {
   position: fixed;
   bottom: 100px; /* 距离底部的距离 */
   right: 20px; /* 距离右侧的距离 */
@@ -746,15 +851,10 @@ onMounted(async () => {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
 }
 
-.fixed-user {
-  position: fixed;
-  bottom: 40px; /* 距离底部的距离 */
-  right: 20px; /* 距离右侧的距离 */
-  width: 40px;
-  height: 40px;
-  border-radius: 50%; /* 使边框成圆形 */
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* 添加阴影效果 */
-  cursor: pointer;
+.toolbox-items {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
 }
 
 .is-done {
@@ -778,5 +878,9 @@ onMounted(async () => {
 .dialog-footer {
   text-align: center; /* 文字水平居中 */
   margin-top: 5px; /* 设置顶部间距 */
+}
+
+.undetermined-item {
+  margin-top: 10px;
 }
 </style>

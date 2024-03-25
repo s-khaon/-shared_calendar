@@ -8,6 +8,13 @@ export const getTodoItems = (groupId, params) => {
     })
 }
 
+export const getUndeterminedTodoItems = (groupId) => {
+    return service({
+        url: '/todo/' + groupId + '/undetermined/',
+        method: 'get',
+    })
+}
+
 export const createTodoItem = (data) => {
     return service({
         url: '/todo/item/',
