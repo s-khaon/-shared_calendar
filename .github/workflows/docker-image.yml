@@ -16,17 +16,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Get version
-      id: get_version
-      run: echo ::set-output name=VERSION::${{ GITHUB_REF/refs\/tags\// }}
     - name: Build the Server Docker image
       working-directory: ./server
-      run: docker build ./build/Dockerfile --tag ${DOCKER_IMAGE_REPO}/shared-calendar:${{ VERSION }} .
+      run: docker build ./build/Dockerfile --tag ${DOCKER_IMAGE_REPO}/shared-calendar:${{ github.ref }} .
     - name: Build the H5 Docker image
       working-directory: ./web
-      run: docker build ./build/Dockerfile --tag ${DOCKER_IMAGE_REPO}/shared-calendar-h5:${{ VERSION }} .
+      run: docker build ./build/Dockerfile --tag ${DOCKER_IMAGE_REPO}/shared-calendar-h5:${{ github.ref }} .
     - name: Push the Server Docker image
-      run: docker push ${DOCKER_IMAGE_REPO}/shared-calendar:${{ VERSION }}
+      run: docker push ${DOCKER_IMAGE_REPO}/shared-calendar:${{ github.ref }}
     - name: Push the H5 Docker image
-      run: docker push ${DOCKER_IMAGE_REPO}/shared-calendar-h5:${{ VERSION }}
+      run: docker push ${DOCKER_IMAGE_REPO}/shared-calendar-h5:${{ github.ref }}
     
