@@ -46,7 +46,8 @@ class Group(ModelBase):
     group_name = Column(String(20), index=True, nullable=False, comment="团队名称")
     owner_id = Column(Integer, nullable=False, comment="团队所有者")
 
-    todo_items = relationship("TodoList", back_populates="group", primaryjoin="foreign(TodoList.group_id) == Group.id", cascade="all, delete")
+    todo_items = relationship("TodoList", back_populates="group", primaryjoin="foreign(TodoList.group_id) == Group.id",
+                              cascade="all, delete")
 
     owner = relationship("User", primaryjoin="foreign(Group.owner_id) == User.id")
     members = relationship(
@@ -81,7 +82,8 @@ class TodoList(ModelBase):
     done_by = Column(Integer, nullable=True, comment="完成人")
     done_result = Column(String(50), nullable=True, default="", comment="完成结果")
     is_all_day = Column(Boolean, default=False, comment="全天事件", nullable=False)
-    start_time = Column(DateTime, nullable=False, comment="计划开始时间")
+    is_undetermined = Column(Boolean, default=False, comment="是否时间待定", nullable=False)
+    start_time = Column(DateTime, nullable=True, comment="计划开始时间")
     end_time = Column(DateTime, nullable=True, comment="计划结束时间")
 
     group = relationship("Group", primaryjoin="foreign(TodoList.group_id) == Group.id", back_populates="todo_items")

@@ -26,6 +26,13 @@ async def get_items(group_id: Annotated[int, Path(title="团队id")],
     return todo_service.get_todo_list(group_id, current_user, db, from_date, to_date)
 
 
+@router.get("/{group_id}/undetermined/", response_model=list[schemas.TodoList], name="代办列表")
+async def get_undetermined_items(group_id: Annotated[int, Path(title="团队id")],
+                                 current_user: models.User = Depends(get_current_active_user),
+                                 db: Session = Depends(get_db)):
+    return todo_service.get_undetermined_todo_list(group_id, current_user, db)
+
+
 @router.post("/item/", name="新建待办事项", response_model=schemas.TodoList)
 async def create_todo_item(item: Annotated[schemas.TodoItemCreate, Body()],
                            current_user: models.User = Depends(get_current_active_user), db: Session = Depends(get_db)):
