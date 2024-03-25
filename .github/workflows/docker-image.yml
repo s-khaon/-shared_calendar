@@ -1,0 +1,32 @@
+name: Docker Image CI
+
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  DOCKER_IMAGE_REPO: ccr.ccs.tencentyun.com/skhaon
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=VERSION::${{ GITHUB_REF/refs\/tags\// }}
+    - name: Build the Server Docker image
+      working-directory: ./server
+      run: docker build ./build/Dockerfile --tag ${DOCKER_IMAGE_REPO}/shared-calendar:${{ VERSION }} .
+    - name: Build the H5 Docker image
+      working-directory: ./web
+      run: docker build ./build/Dockerfile --tag ${DOCKER_IMAGE_REPO}/shared-calendar-h5:${{ VERSION }} .
+    - name: Push the Server Docker image
+      run: docker push ${DOCKER_IMAGE_REPO}/shared-calendar:${{ VERSION }}
+    - name: Push the H5 Docker image
+      run: docker push ${DOCKER_IMAGE_REPO}/shared-calendar-h5:${{ VERSION }}
+    
