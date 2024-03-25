@@ -743,10 +743,10 @@ onMounted(async () => {
       <el-button circle @click="userDialogVisible=true" color="#99bbff" :icon="UserFilled" size="large"></el-button>
       <el-popover
           placement="top-start"
-          title="Title"
+          title="使用帮助"
           :width="200"
           trigger="hover"
-          content="this is content, this is content, this is content"
+          content="点击团队名称旁的按钮可创建、编辑、删除、退出、邀请成员加入团队。双击对应日期可以快捷打开对应日期新增待办事项窗口，亦可使用右下角工具箱中的添加按钮进行添加。点击对应计划可以进行计划内容编辑。"
       >
         <template #reference>
           <el-button circle color="#ffccff" :icon="Service" size="large"></el-button>
