@@ -5,9 +5,6 @@ on:
     tags:
       - v*
 
-env:
-  DOCKER_IMAGE_REPO: ccr.ccs.tencentyun.com/skhaon
-
 jobs:
 
   build:
@@ -21,12 +18,12 @@ jobs:
       run: echo "::set-output name=tag::$(echo ${GITHUB_REF#refs/tags/})"
     - name: Build the Server Docker image
       working-directory: ./server
-      run: docker build ./build/Dockerfile --tag ${{ DOCKER_IMAGE_REPO }}/shared-calendar:${{ tag }} .
+      run: docker build -f ./build/Dockerfile -t ccr.ccs.tencentyun.com/skhaon/shared-calendar:${{ steps.extract_tag.outputs.tag }} .
     - name: Build the H5 Docker image
       working-directory: ./web
-      run: docker build ./build/Dockerfile --tag ${{ DOCKER_IMAGE_REPO }}/shared-calendar-h5:${{ tag }} .
+      run: docker build -f ./build/Dockerfile -t ccr.ccs.tencentyun.com/skhaon/shared-calendar-h5:${{ steps.extract_tag.outputs.tag }} .
     - name: Push the Server Docker image
-      run: docker push ${{ DOCKER_IMAGE_REPO }}/shared-calendar:${{ tag }}
+      run: docker push ccr.ccs.tencentyun.com/skhaon/shared-calendar:${{ steps.extract_tag.outputs.tag }}
     - name: Push the H5 Docker image
-      run: docker push ${{ DOCKER_IMAGE_REPO }}/shared-calendar-h5:${{ tag }}
+      run: docker push ccr.ccs.tencentyun.com/skhaon/shared-calendar-h5:${{ steps.extract_tag.outputs.tag }}
     
