@@ -153,12 +153,16 @@ const clickEditPlan = (item) => {
 
 const resetPlanForm = (done) => {
   planFormRef.value.resetFields()
-  done()
+  if(done) {
+    done()
+  }
 }
 
 const resetGroupForm = (done) => {
   groupFormRef.value.resetFields()
-  done()
+  if (done) {
+    done()
+  }
 }
 
 const addGroup = () => {
@@ -289,6 +293,7 @@ const submitGroupForm = () => {
     }
     emitter.emit('closeLoading')
     loading.value = false
+    resetGroupForm(null)
     return true
   })
 }
@@ -315,6 +320,7 @@ const submitPlanForm = () => {
     await getTodoItemsData(currentGroupId.value)
     emitter.emit('closeLoading')
     loading.value = false
+    resetPlanForm(null)
     return true
   })
 }
@@ -608,7 +614,7 @@ onMounted(async () => {
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="groupDialogVisible = false">取消</el-button>
+        <el-button @click="groupDialogVisible = false;resetGroupForm(null)">取消</el-button>
         <el-button type="primary" @click="submitGroupForm" :loading="loading">
           确定
         </el-button>
@@ -688,7 +694,7 @@ onMounted(async () => {
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="planDialogVisible = false">取消</el-button>
+        <el-button @click="planDialogVisible = false;resetPlanForm(null)">取消</el-button>
         <el-button type="primary" @click="submitPlanForm" :loading="loading">
           确定
         </el-button>
