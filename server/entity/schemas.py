@@ -86,7 +86,6 @@ class InvitationInfo(SchemasBase):
     code: str = Field(title="邀请码")
     creator_id: int = Field(title="邀请人id")
     group_id: int = Field(title="团队id")
-
     creator: UserPublic = Field(title="创建者")
     group: GroupInfo = Field(title="团队信息")
 
@@ -115,7 +114,8 @@ class TodoItemCreate(SchemasBase):
     name: str = Field(title="代办事项名称", max_length=20)
     description: str = Field(title="事件介绍", max_length=500)
     is_all_day: bool = Field(title="是否为全天事件")
-    start_time: datetime = Field(title="计划开始时间")
+    is_undetermined: bool = Field(title="是否时间待定")
+    start_time: datetime | None = Field(title="计划开始时间")
     end_time: datetime | None = Field(title="计划结束时间")
 
 
@@ -124,6 +124,7 @@ class TodoItemUpdate(SchemasBase):
     name: str = Field(title="代办事项名称", max_length=20)
     description: str = Field(title="事件介绍", max_length=500)
     is_all_day: bool = Field(title="是否为全天事件")
+    is_undetermined: bool = Field(title="是否时间待定")
     start_time: datetime | None = Field(title="计划开始时间")
     end_time: datetime | None = Field(title="计划结束时间")
 
@@ -146,7 +147,8 @@ class TodoList(SchemasBase):
     done_by: int | None = Field(gt=0, title="完成人")
     done_result: str | None = Field(max_length=50, title="完成结果")
     is_all_day: bool = Field(title="全天事件")
-    start_time: datetime = Field(title="计划开始时间")
+    is_undetermined: bool = Field(title="是否时间待定")
+    start_time: datetime | None = Field(title="计划开始时间")
     end_time: datetime | None = Field(title="计划结束时间")
     created_at: datetime = Field(title="创建时间")
     updated_at: datetime = Field(title="修改时间")

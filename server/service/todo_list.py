@@ -2,7 +2,7 @@ import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import desc
-from sqlalchemy.orm import session, joinedload
+from sqlalchemy.orm import session, joinedload, Session
 
 from entity import models, schemas
 from service import groups as group_service
@@ -11,16 +11,7 @@ from service import groups as group_service
 def get_todo_list(
         group_id: int, current_user: models.User, db: session, from_date_str: str, to_date_str: str
 ) -> list[schemas.TodoItemsGroupByDate]:
-    if group_id != 0 and not group_service.is_user_in_group(current_user.id, group_id, db):
-        raise HTTPException(403, detail="请先加入此团队")
-    next_date_str = (datetime.datetime.strptime(to_date_str, "%Y-%m-%d") + datetime.timedelta(days=1)
-                     ).strftime("%Y-%m-%d")
-    query = db.query(models.TodoList).filter(models.TodoList.group_id == group_id,
-                                             models.TodoList.start_time.between(from_date_str, next_date_str))
-    if group_id == 0:
-        query = query.filter(models.TodoList.user_id == current_user.id)
-    db_items = query.options(joinedload(models.TodoList.done_user), joinedload(models.TodoList.creator)).order_by(
-        desc(models.TodoList.id), desc(models.TodoList.id)).all()
+    db_items = get_todo_list_base(group_id, current_user, db, from_date_str=from_date_str, to_date_str=to_date_str)
     # 按日期分组
     result = list()
     current_key = ""
@@ -34,10 +25,38 @@ def get_todo_list(
     return result
 
 
+def get_undetermined_todo_list(group_id: int, current_user: models.User, db: Session):
+    return get_todo_list_base(group_id, current_user, db, is_undetermined=True)
+
+
+def get_todo_list_base(
+        group_id: int, current_user: models.User, db: session, from_date_str: str = '', to_date_str: str = '',
+        is_undetermined: bool = False
+) -> list[schemas.TodoItemsGroupByDate]:
+    if group_id != 0 and not group_service.is_user_in_group(current_user.id, group_id, db):
+        raise HTTPException(403, detail="请先加入此团队")
+    query = db.query(models.TodoList).filter(models.TodoList.group_id == group_id)
+    if is_undetermined:
+        query = query.filter(models.TodoList.is_undetermined == True)
+    else:
+        next_date_str = (datetime.datetime.strptime(to_date_str, "%Y-%m-%d") + datetime.timedelta(days=1)
+                         ).strftime("%Y-%m-%d")
+        query = query.filter(models.TodoList.start_time.between(from_date_str, next_date_str))
+    if group_id == 0:
+        query = query.filter(models.TodoList.user_id == current_user.id)
+    db_items = query.options(joinedload(models.TodoList.done_user), joinedload(models.TodoList.creator)).order_by(
+        desc(models.TodoList.id), desc(models.TodoList.id)).all()
+    return db_items
+
+
 def create_todo_item(item: schemas.TodoItemCreate, current_user: models.User, db: session) -> models.TodoList:
     if item.group_id != 0 and not group_service.is_user_in_group(current_user.id, item.group_id, db):
         raise HTTPException(403, detail="请先加入此团队")
-    if item.is_all_day:
+    if item.is_undetermined:
+        item.start_time = None
+        item.end_time = None
+        item.is_all_day = False
+    elif item.is_all_day:
         item.start_time = item.start_time.replace(hour=0, minute=0, second=0, microsecond=0)
         item.end_time = item.end_time.replace(hour=0, minute=0, second=0, microsecond=0)
     db_item = models.TodoList(**item.dict(), user_id=current_user.id)
@@ -55,7 +74,11 @@ def update_todo_item(item: schemas.TodoItemUpdate, current_user: models.User, db
         raise HTTPException(403, detail="请先加入此团队")
     if db_item.group_id == 0 and db_item.user_id != current_user.id:
         raise HTTPException(403, detail="无权限修改他人事项")
-    if item.is_all_day:
+    if item.is_undetermined:
+        item.start_time = None
+        item.end_time = None
+        item.is_all_day = False
+    elif item.is_all_day:
         item.start_time = item.start_time.replace(hour=0, minute=0, second=0, microsecond=0)
         item.end_time = item.end_time.replace(hour=0, minute=0, second=0, microsecond=0)
 
