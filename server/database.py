@@ -7,7 +7,7 @@ from config.config import Config
 SQLALCHEMY_DATABASE_URL = Config.db_url
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args=Config.connect_args, echo=Config.echo_sql
+    SQLALCHEMY_DATABASE_URL, connect_args=Config.connect_args, echo=Config.echo_sql, pool_recycle=3600
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
