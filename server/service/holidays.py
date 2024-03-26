@@ -28,18 +28,23 @@ def fetch_and_save_holidays(url, db: session) -> bool:
         data = response.json()
         years_data = data.get('Years', {})
         holidays_data = []
+        first_date = None
         for year, holidays in years_data.items():
             for holiday in holidays:
+                start_date = datetime.datetime.strptime(holiday['StartDate'], "%Y-%m-%d").date()
+                if first_date is None or start_date < first_date:
+                    first_date = start_date
                 holiday_obj = models.Holiday(
                     name=holiday['Name'],
-                    start_date=datetime.datetime.strptime(holiday['StartDate'], "%Y-%m-%d").date(),
+                    start_date=start_date,
                     end_date=datetime.datetime.strptime(holiday['EndDate'], "%Y-%m-%d").date(),
                     comp_days=holiday['CompDays'],
                     memo=holiday['Memo']
                 )
                 holidays_data.append(holiday_obj)
         if len(holidays_data) > 0:
-            db.query(models.Holiday).delete()
+            # 删除数据中重复的数据
+            db.query(models.Holiday).filter(models.Holiday.start_date >= first_date).delete()
         # 将数据存入数据库
         db.add_all(holidays_data)
         db.commit()
