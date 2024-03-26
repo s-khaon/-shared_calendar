@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, Table
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, Table, JSON, Date
 
 from database import Base
 
@@ -46,7 +46,8 @@ class Group(ModelBase):
     group_name = Column(String(20), index=True, nullable=False, comment="团队名称")
     owner_id = Column(Integer, nullable=False, comment="团队所有者")
 
-    todo_items = relationship("TodoList", back_populates="group", primaryjoin="foreign(TodoList.group_id) == Group.id", cascade="all, delete")
+    todo_items = relationship("TodoList", back_populates="group", primaryjoin="foreign(TodoList.group_id) == Group.id",
+                              cascade="all, delete")
 
     owner = relationship("User", primaryjoin="foreign(Group.owner_id) == User.id")
     members = relationship(
@@ -98,3 +99,12 @@ class TodoList(ModelBase):
             self.done_time = datetime.now()
         else:
             self.done_time = None
+
+
+class Holiday(ModelBase):
+    __tablename__ = "holidays"
+    name = Column(String(10), nullable=False, comment="节假日名称")
+    start_date = Column(Date, nullable=False, comment="开始日期")
+    end_date = Column(Date, nullable=False, comment="结束日期")
+    comp_days = Column(JSON, nullable=False, default=[], comment="补班日期")
+    memo = Column(String(100), nullable=False, default="", comment="备注")

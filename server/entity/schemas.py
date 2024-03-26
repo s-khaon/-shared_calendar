@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import TypeVar
 
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, computed_field
@@ -173,3 +173,11 @@ class TodoList(SchemasBase):
 class TodoItemsGroupByDate(SchemasBase):
     key: str
     value: list[TodoList]
+
+
+class Holiday(SchemasBase):
+    name: str
+    start_date: date
+    end_date: date
+    comp_days: list[str] = []
+    memo: str = ''

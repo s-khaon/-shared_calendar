@@ -5,3 +5,4 @@ class Config:
     jwt_secret = "f3ef77203bdf10139e9979aff7be5ba49868fa477d3329891dc19a10d2429547"  # # openssl rand -hex 32
     jwt_algorithm = "HS256"
     jwt_expires_minutes = 60 * 24 * 7
+    holidays_subscribe_urls = ["https://www.shuyz.com/githubfiles/china-holiday-calender/master/holidayAPI.json", "https://raw.githubusercontent.com/lanceliao/china-holiday-calender/master/holidayAPI.json"]
