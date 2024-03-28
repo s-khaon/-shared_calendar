@@ -39,4 +39,26 @@ function formatTime(date) {
     return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
 }
 
-export {getMonthFirstAndLastDay, formatDate, formatTime}
+function getDateRangeDates(startDateStr, endDateStr) {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    const dateList = [];
+
+    // 循环遍历从起始日期到结束日期的每一天
+    while (startDate <= endDate) {
+        const year = startDate.getFullYear();
+        const month = startDate.getMonth() + 1;
+        const day = startDate.getDate();
+
+        // 将日期格式化为字符串，并添加到列表中
+        const formattedDate = year + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
+        dateList.push(formattedDate);
+
+        // 递增日期
+        startDate.setDate(startDate.getDate() + 1);
+    }
+
+    return dateList
+}
+
+export {getMonthFirstAndLastDay, formatDate, formatTime, getDateRangeDates}

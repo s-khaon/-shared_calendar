@@ -6,7 +6,7 @@ import {
   ArrowRight, Avatar, ChatLineSquare, Check, Close, CloseBold,
   Connection,
   Delete,
-  Edit, EditPen, Finished, FirstAidKit, List,
+  Edit, Finished, FirstAidKit, List,
   Operation,
   Plus, Remove, Service, UserFilled
 } from "@element-plus/icons-vue";
@@ -26,10 +26,11 @@ import {
   updateTodoItem,
   deleteTodoItem, getUndeterminedTodoItems
 } from "@/api/todoList.js";
-import {formatDate, formatTime, getMonthFirstAndLastDay} from "@/utils/date.js";
+import {formatDate, formatTime, getDateRangeDates, getMonthFirstAndLastDay} from "@/utils/date.js";
 import {useUserStore} from '@/pinia/modules/user'
 import {emitter} from "@/utils/bus.js";
 import {ElMessage, ElMessageBox} from "element-plus";
+import {getHolidays} from "@/api/holiday.js";
 
 const userStore = useUserStore()
 const calendar = ref()
@@ -41,6 +42,8 @@ const defaultGroup = {
 }
 const groupOptions = ref([defaultGroup])
 const todoItems = ref([])
+const todoItemDateMap = reactive({})
+const holidaysDateMap = reactive({})
 const undeterminedTodoItems = ref([])
 const groupDialogVisible = ref(false)
 const groupFormRef = ref()
@@ -153,7 +156,7 @@ const clickEditPlan = (item) => {
 
 const resetPlanForm = (done) => {
   planFormRef.value.resetFields()
-  if(done) {
+  if (done) {
     done()
   }
 }
@@ -366,6 +369,9 @@ const getTodoItemsData = async (groupId) => {
   const res = await getTodoItems(groupId, params)
   if (res && res.status === 200) {
     todoItems.value = res.data
+    for (const item of res.data) {
+      todoItemDateMap[item.key] = item.value
+    }
     flushPlanData(selectedDateStr.value)
     await getUndeterminedData()
   }
@@ -477,6 +483,15 @@ const toolsDialogVisible = ref(false)
 
 onMounted(async () => {
   currentUser.value = await userStore.GetUserInfo()
+  const res = await getHolidays()
+  if (res && res.status === 200) {
+    for (const item of res.data) {
+      const dateList = getDateRangeDates(item.start_date, item.end_date)
+      for (const date of dateList) {
+        holidaysDateMap[date] = item
+      }
+    }
+  }
   await getData()
 })
 
@@ -547,16 +562,17 @@ onMounted(async () => {
           </template>
           <template #date-cell="{ data }">
             <div @click="clickDate(data)" class="calendar-cell">
-              <div>
+              <div :class="{ 'weekend': data.date.getDay() === 0 || data.date.getDay() === 6 }" class="cell-header">
                 {{ data.day.split("-").slice(2).join("-").replace("0", "") }}
               </div>
-              <template v-for="item in todoItems" :key="item.id">
-                <div class="text-area" v-if="item.key === data.day">
-                  <div v-for="i in item.value" :key="i.id">
-                    <el-text :tag="i.is_done ? 'del' :'p'" size="small">{{ i.name }}</el-text>
-                  </div>
+              <div class="text-area">
+                <div v-show="holidaysDateMap[data.day]">
+                  <el-text size="small" type="primary">{{ holidaysDateMap[data.day]?.name }}</el-text>
                 </div>
-              </template>
+                <div v-for="i in todoItemDateMap[data.day]" :key="i.id">
+                  <el-text :tag="i.is_done ? 'del' :'p'" size="small">{{ i.name }}</el-text>
+                </div>
+              </div>
             </div>
           </template>
         </el-calendar>
@@ -811,6 +827,14 @@ onMounted(async () => {
 </template>
 
 <style lang='css' scoped>
+
+.cell-header {
+  text-align: center;
+}
+
+.weekend {
+  background-color: antiquewhite;
+}
 
 .button-box :deep(button) {
   margin: 2px;
