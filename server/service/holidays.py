@@ -23,7 +23,7 @@ def get_holidays(from_date_str: str, to_date_str: str, db: session) -> list[sche
 
 
 def fetch_and_save_holidays(url, db: session) -> bool:
-    response = requests.get(url)
+    response = requests.get(url, timeout=5)
     if response.status_code == 200:
         data = response.json()
         years_data = data.get('Years', {})
