@@ -44,6 +44,7 @@ const groupOptions = ref([defaultGroup])
 const todoItems = ref([])
 const todoItemDateMap = reactive({})
 const holidaysDateMap = reactive({})
+let compDays = new Set()
 const undeterminedTodoItems = ref([])
 const groupDialogVisible = ref(false)
 const groupFormRef = ref()
@@ -201,6 +202,20 @@ const handleQuitGroup = async () => {
     if (res && res.status === 200) {
       await getData()
     }
+  }
+}
+
+const getDayType = (date) => {
+  const dateStr = formatDate(date)
+  if (holidaysDateMap[dateStr]) {
+    // 法定节假日
+    return 'holiday'
+  } else if (compDays.has(dateStr)) {
+    // 补班
+    return 'compDay'
+  } else {
+    // 默认
+    return 'default'
   }
 }
 
@@ -486,6 +501,9 @@ onMounted(async () => {
   const res = await getHolidays()
   if (res && res.status === 200) {
     for (const item of res.data) {
+      for (const day of item.comp_days) {
+        compDays.add(day)
+      }
       const dateList = getDateRangeDates(item.start_date, item.end_date)
       for (const date of dateList) {
         holidaysDateMap[date] = item
@@ -562,8 +580,10 @@ onMounted(async () => {
           </template>
           <template #date-cell="{ data }">
             <div @click="clickDate(data)" class="calendar-cell">
-              <div :class="{ 'weekend': data.date.getDay() === 0 || data.date.getDay() === 6 }" class="cell-header">
-                {{ data.day.split("-").slice(2).join("-").replace("0", "") }}
+              <div class="cell-header">
+                <span>{{ data.day.split("-").slice(2).join("-").replace("0", "") }}</span>
+                <span v-show="holidaysDateMap[data.day]" class="holiday">休</span>
+                <span v-show="compDays.has(data.day)" class="camp-day">班</span>
               </div>
               <div class="text-area">
                 <div v-show="holidaysDateMap[data.day]">
@@ -832,9 +852,18 @@ onMounted(async () => {
   text-align: center;
 }
 
-.weekend {
-  background-color: antiquewhite;
+.holiday {
+  font-size: 8px;
+  color: #85ce61;
+  vertical-align: super;
 }
+
+.camp-day {
+  font-size: 8px;
+  color: #E6A23C;
+  vertical-align: super;
+}
+
 
 .button-box :deep(button) {
   margin: 2px;
