@@ -117,14 +117,13 @@ const clickDate = (data) => {
   selectedDateStr.value = data.day
   flushPlanData(data.day)
   if (data.isSelected) {
-    planDialogVisible.value = true
+    clickAddPlan()
   }
 }
 
 const clickAddPlan = () => {
   const endTime = new Date(currentDate.value)
   endTime.setHours(currentDate.value.getHours() + 1)
-
   planForm.name = ''
   planForm.description = ''
   planForm.done_time = ''
