@@ -218,6 +218,10 @@ const getDayType = (date) => {
   }
 }
 
+const ltrimZero = (str) => {
+  return str.replace(/^0+/, '')
+}
+
 const copyToClipboard = (text) => {
 // 创建一个新的textarea元素
   const textarea = document.createElement('textarea')
@@ -580,7 +584,7 @@ onMounted(async () => {
           <template #date-cell="{ data }">
             <div @click="clickDate(data)" class="calendar-cell">
               <div class="cell-header">
-                <span>{{ data.day.split("-").slice(2).join("-").replace("0", "") }}</span>
+                <span>{{ ltrimZero(data.day.split("-").slice(2).join("-")) }}</span>
                 <span v-show="holidaysDateMap[data.day]" class="holiday">休</span>
                 <span v-show="compDays.has(data.day)" class="camp-day">班</span>
               </div>
